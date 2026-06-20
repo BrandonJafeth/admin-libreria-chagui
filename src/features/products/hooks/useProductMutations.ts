@@ -8,6 +8,7 @@ import {
   uploadProductImage,
   deleteProductImage,
   setMainImage,
+  reorderProductImages,
   upsertProductColor,
   deleteProductColor,
   type ProductInsert,
@@ -57,13 +58,6 @@ export function useDeleteProduct() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteProduct(id),
-    onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: PRODUCTS_KEY })
-      qc.setQueriesData<ProductListItem[]>(
-        { queryKey: PRODUCTS_KEY },
-        (old) => old?.filter((p) => p.id !== id),
-      )
-    },
     onSettled: () => qc.invalidateQueries({ queryKey: PRODUCTS_KEY }),
   })
 }
@@ -136,6 +130,14 @@ export function useSetMainImage(productId: string) {
   const invalidate = useInvalidateProduct(productId)
   return useMutation({
     mutationFn: (imageId: string) => setMainImage(imageId),
+    onSuccess: invalidate,
+  })
+}
+
+export function useReorderImages(productId: string) {
+  const invalidate = useInvalidateProduct(productId)
+  return useMutation({
+    mutationFn: (updates: { id: string; orden: number }[]) => reorderProductImages(updates),
     onSuccess: invalidate,
   })
 }

@@ -21,7 +21,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           // Mobile: no left indent (sidebar is an overlay)
           'pl-0',
           // Desktop: shift content by sidebar width
-          sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-56',
+          sidebarCollapsed ? 'lg:pl-14' : 'lg:pl-60',
         )}
       >
         <div className="p-4 sm:p-6">{children}</div>

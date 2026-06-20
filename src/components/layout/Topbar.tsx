@@ -1,5 +1,5 @@
 import { Link, useMatches } from '@tanstack/react-router'
-import { ChevronRight, LogOut, Menu, User } from 'lucide-react'
+import { ChevronRight, LogOut, Menu } from 'lucide-react'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import {
   DropdownMenu,
@@ -8,7 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
 import { useUIStore } from '@/store/ui-store'
 import { cn } from '@/lib/utils'
 
@@ -27,43 +26,48 @@ export function Topbar() {
     .filter((m) => m.staticData.breadcrumb)
     .map((m) => ({ label: m.staticData.breadcrumb!, path: m.pathname }))
 
+  const initial = user?.email ? user.email.split('@')[0][0].toUpperCase() : 'A'
+
   return (
     <header
       className={cn(
-        'fixed top-0 right-0 z-30 flex h-14 items-center justify-between border-b border-border bg-card/80 backdrop-blur-sm px-4 transition-all duration-200',
-        // Mobile: full width (sidebar is an overlay, not push)
+        'fixed top-0 right-0 z-30 flex h-14 items-center justify-between',
+        'border-b border-border bg-card px-6 transition-all duration-200',
         'left-0',
-        // Desktop: offset by sidebar width
-        sidebarCollapsed ? 'lg:left-16' : 'lg:left-56',
+        sidebarCollapsed ? 'lg:left-14' : 'lg:left-60',
       )}
     >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         {/* Hamburger — mobile only */}
         <button
           onClick={() => setSidebarMobileOpen(!sidebarMobileOpen)}
-          className="lg:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          className="lg:hidden p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors mr-1"
           aria-label="Abrir menú"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4 w-4" />
         </button>
 
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-1 text-sm">
+        <nav className="flex items-center gap-1.5 text-[12px]">
           {crumbs.length === 0 && (
-            <span className="font-medium text-foreground">Dashboard</span>
+            <span className="font-semibold text-foreground tracking-wide">Dashboard</span>
           )}
           {crumbs.map((crumb, i) => (
-            <span key={crumb.path} className="flex items-center gap-1">
-              {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+            <span key={crumb.path} className="flex items-center gap-1.5">
+              {i > 0 && (
+                <ChevronRight className="h-3 w-3 text-muted-foreground/40 shrink-0" />
+              )}
               {i < crumbs.length - 1 ? (
                 <Link
                   to={crumb.path}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="font-medium text-foreground">{crumb.label}</span>
+                <span className="font-semibold text-foreground tracking-[0.2px]">
+                  {crumb.label}
+                </span>
               )}
             </span>
           ))}
@@ -73,14 +77,17 @@ export function Topbar() {
       {/* User menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <User className="h-4 w-4" />
-          </Button>
+          <button
+            className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-[13px] font-semibold text-white hover:bg-accent/80 transition-colors select-none"
+            title={user?.email ?? 'Usuario'}
+          >
+            {initial}
+          </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuContent align="end" className="w-52">
           {user?.email && (
             <>
-              <div className="px-2 py-1.5 text-xs text-muted-foreground truncate">
+              <div className="px-3 py-2 text-[11px] text-muted-foreground truncate font-medium">
                 {user.email}
               </div>
               <DropdownMenuSeparator />
@@ -88,9 +95,9 @@ export function Topbar() {
           )}
           <DropdownMenuItem
             onClick={() => signOut()}
-            className="text-destructive focus:text-destructive"
+            className="text-destructive focus:text-destructive gap-2 text-[12px]"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
             Cerrar sesión
           </DropdownMenuItem>
         </DropdownMenuContent>

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
+import { uploadToCloudinary, extractPublicId } from '@/lib/cloudinary'
 import type { Tables, Insertable, Updatable } from '@/types/database.types'
 
 export type Product = Tables<'products'>
@@ -24,31 +25,43 @@ export interface ProductFilters {
   q?: string
   estado?: 'disponible' | 'agotado'
   destacado?: boolean
+  categoryId?: string
+  page?: number
+  pageSize?: number
 }
 
-export async function fetchProducts(
-  filters?: ProductFilters,
-): Promise<ProductListItem[]> {
+export const DEFAULT_PAGE_SIZE = 20
+
+export interface ProductsPage {
+  data: ProductListItem[]
+  count: number
+}
+
+export async function fetchProducts(filters?: ProductFilters): Promise<ProductsPage> {
+  const page = filters?.page ?? 1
+  const pageSize = filters?.pageSize ?? DEFAULT_PAGE_SIZE
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  // Use !inner join when filtering by category so only matching products are returned
+  const selectStr = filters?.categoryId
+    ? 'id, slug, nombre, precio, estado, destacado, created_at, product_images(url, es_principal), product_categories!inner(category_id)'
+    : 'id, slug, nombre, precio, estado, destacado, created_at, product_images(url, es_principal), product_categories(category_id)'
+
   let query = supabase
     .from('products')
-    .select(
-      'id, slug, nombre, precio, estado, destacado, created_at, product_images(url, es_principal), product_categories(category_id)',
-    )
+    .select(selectStr, { count: 'exact' })
     .order('created_at', { ascending: false })
+    .range(from, to)
 
-  if (filters?.q) {
-    query = query.ilike('nombre', `%${filters.q}%`)
-  }
-  if (filters?.estado) {
-    query = query.eq('estado', filters.estado)
-  }
-  if (filters?.destacado !== undefined) {
-    query = query.eq('destacado', filters.destacado)
-  }
+  if (filters?.q) query = query.ilike('nombre', `%${filters.q}%`)
+  if (filters?.estado) query = query.eq('estado', filters.estado)
+  if (filters?.destacado !== undefined) query = query.eq('destacado', filters.destacado)
+  if (filters?.categoryId) query = query.eq('product_categories.category_id', filters.categoryId)
 
-  const { data, error } = await query
+  const { data, error, count } = await query
   if (error) throw error
-  return data as ProductListItem[]
+  return { data: data as ProductListItem[], count: count ?? 0 }
 }
 
 export async function fetchProduct(id: string): Promise<ProductDetail> {
@@ -108,6 +121,19 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<void> {
+  // Delete images from Cloudinary before removing the product row
+  const { data: images } = await supabase
+    .from('product_images')
+    .select('url')
+    .eq('product_id', id)
+
+  if (images && images.length > 0) {
+    const publicIds = images.map((img) => extractPublicId(img.url)).filter(Boolean)
+    if (publicIds.length > 0) {
+      await supabase.functions.invoke('cloudinary-delete', { body: { public_ids: publicIds } })
+    }
+  }
+
   const { error } = await supabase.from('products').delete().eq('id', id)
   if (error) throw error
 }
@@ -128,8 +154,7 @@ export async function toggleProductDestacado(
   if (error) throw error
 }
 
-// Images — assumes bucket 'product-images' exists (public)
-// To create: supabase storage create product-images --public
+// Images — stored in Cloudinary; delete via cloudinary-delete Edge Function
 export async function uploadProductImage(
   productId: string,
   file: File,
@@ -137,21 +162,11 @@ export async function uploadProductImage(
   esPrincipal: boolean,
   alt?: string,
 ): Promise<void> {
-  const ext = file.name.split('.').pop() ?? 'jpg'
-  const path = `${productId}/${Date.now()}.${ext}`
-
-  const { error: uploadErr } = await supabase.storage
-    .from('product-images')
-    .upload(path, file)
-  if (uploadErr) throw uploadErr
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from('product-images').getPublicUrl(path)
+  const { url } = await uploadToCloudinary(file)
 
   const { error: dbErr } = await supabase.from('product_images').insert({
     product_id: productId,
-    url: publicUrl,
+    url,
     orden,
     es_principal: esPrincipal,
     alt: alt ?? null,
@@ -163,9 +178,9 @@ export async function deleteProductImage(
   imageId: string,
   url: string,
 ): Promise<void> {
-  const pathMatch = url.split('/product-images/')[1]
-  if (pathMatch) {
-    await supabase.storage.from('product-images').remove([pathMatch])
+  const publicId = extractPublicId(url)
+  if (publicId) {
+    await supabase.functions.invoke('cloudinary-delete', { body: { public_ids: [publicId] } })
   }
   const { error } = await supabase.from('product_images').delete().eq('id', imageId)
   if (error) throw error
@@ -180,6 +195,16 @@ export async function setMainImage(
     .update({ es_principal: true })
     .eq('id', imageId)
   if (error) throw error
+}
+
+export async function reorderProductImages(
+  updates: { id: string; orden: number }[],
+): Promise<void> {
+  await Promise.all(
+    updates.map(({ id, orden }) =>
+      supabase.from('product_images').update({ orden }).eq('id', id),
+    ),
+  )
 }
 
 // Colors

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Plus, Trash2, Pipette, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,6 +8,7 @@ import {
   useDeleteProductColor,
 } from '../hooks/useProductMutations'
 import type { ProductColor } from '../api/products.api'
+import { extractDominantColor } from '@/lib/colorExtractor'
 
 interface ColorPickerProps {
   productId: string
@@ -17,9 +18,40 @@ interface ColorPickerProps {
 export function ColorPicker({ productId, colors }: ColorPickerProps) {
   const [nombre, setNombre] = useState('')
   const [hex, setHex] = useState('')
+  const [extracting, setExtracting] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const upsertMutation = useUpsertProductColor(productId)
   const deleteMutation = useDeleteProductColor(productId)
+
+  function startEdit(color: ProductColor) {
+    setEditingId(color.id)
+    setEditingName(color.nombre)
+  }
+
+  async function commitEdit(color: ProductColor) {
+    const trimmed = editingName.trim()
+    setEditingId(null)
+    if (!trimmed || trimmed === color.nombre) return
+    await upsertMutation.mutateAsync({ id: color.id, nombre: trimmed, hex: color.hex ?? null, orden: color.orden })
+  }
+
+  async function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setExtracting(true)
+    try {
+      const color = await extractDominantColor(file)
+      setHex(color)
+    } catch {
+      // ignore
+    } finally {
+      setExtracting(false)
+    }
+  }
 
   async function handleAdd() {
     if (!nombre.trim()) return
@@ -49,7 +81,27 @@ export function ColorPicker({ productId, colors }: ColorPickerProps) {
                   style={{ backgroundColor: color.hex }}
                 />
               )}
-              <span>{color.nombre}</span>
+              {editingId === color.id ? (
+                <input
+                  autoFocus
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onBlur={() => commitEdit(color)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); commitEdit(color) }
+                    if (e.key === 'Escape') { setEditingId(null) }
+                  }}
+                  className="w-20 bg-transparent outline-none text-sm"
+                />
+              ) : (
+                <span
+                  className="cursor-text hover:text-accent transition-colors"
+                  onClick={() => startEdit(color)}
+                  title="Click para editar"
+                >
+                  {color.nombre}
+                </span>
+              )}
               <button
                 onClick={() => deleteMutation.mutate(color.id)}
                 disabled={deleteMutation.isPending}
@@ -88,6 +140,24 @@ export function ColorPicker({ productId, colors }: ColorPickerProps) {
               value={hex || '#000000'}
               onChange={(e) => setHex(e.target.value)}
               className="w-10 h-8 p-0.5 cursor-pointer"
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={extracting}
+              title="Extraer color de imagen"
+              className="h-8 w-8 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors disabled:opacity-40"
+            >
+              {extracting
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <Pipette className="h-3.5 w-3.5" />}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImagePick}
             />
             {hex && (
               <Button

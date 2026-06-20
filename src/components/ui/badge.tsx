@@ -6,12 +6,14 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary/10 text-primary',
-        secondary: 'bg-secondary text-secondary-foreground',
-        success: 'bg-green-100 text-green-700',
-        warning: 'bg-amber-100 text-amber-700',
+        default:     'bg-primary/10 text-primary',
+        secondary:   'bg-secondary text-secondary-foreground',
+        success:     'bg-green-100 text-green-700',
+        // Agotado → amber-3 warning tone
+        warning:     'bg-accent-3/20 text-[hsl(30,65%,30%)]',
         destructive: 'bg-destructive/10 text-destructive',
-        outline: 'border border-border text-foreground',
+        outline:     'border border-border text-foreground',
+        info:        'bg-accent-2/10 text-accent-2',
       },
     },
     defaultVariants: { variant: 'default' },

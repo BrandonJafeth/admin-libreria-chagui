@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedUsuariosIndexRouteImport } from './routes/_authenticated/usuarios/index'
 import { Route as AuthenticatedProductosIndexRouteImport } from './routes/_authenticated/productos/index'
 import { Route as AuthenticatedCategoriasIndexRouteImport } from './routes/_authenticated/categorias/index'
 import { Route as AuthenticatedProductosNuevoRouteImport } from './routes/_authenticated/productos/nuevo'
@@ -31,6 +32,12 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedUsuariosIndexRoute =
+  AuthenticatedUsuariosIndexRouteImport.update({
+    id: '/usuarios/',
+    path: '/usuarios/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProductosIndexRoute =
   AuthenticatedProductosIndexRouteImport.update({
     id: '/productos/',
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/productos/nuevo': typeof AuthenticatedProductosNuevoRoute
   '/categorias/': typeof AuthenticatedCategoriasIndexRoute
   '/productos/': typeof AuthenticatedProductosIndexRoute
+  '/usuarios/': typeof AuthenticatedUsuariosIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -71,6 +79,7 @@ export interface FileRoutesByTo {
   '/productos/nuevo': typeof AuthenticatedProductosNuevoRoute
   '/categorias': typeof AuthenticatedCategoriasIndexRoute
   '/productos': typeof AuthenticatedProductosIndexRoute
+  '/usuarios': typeof AuthenticatedUsuariosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -81,6 +90,7 @@ export interface FileRoutesById {
   '/_authenticated/productos/nuevo': typeof AuthenticatedProductosNuevoRoute
   '/_authenticated/categorias/': typeof AuthenticatedCategoriasIndexRoute
   '/_authenticated/productos/': typeof AuthenticatedProductosIndexRoute
+  '/_authenticated/usuarios/': typeof AuthenticatedUsuariosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +101,7 @@ export interface FileRouteTypes {
     | '/productos/nuevo'
     | '/categorias/'
     | '/productos/'
+    | '/usuarios/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -99,6 +110,7 @@ export interface FileRouteTypes {
     | '/productos/nuevo'
     | '/categorias'
     | '/productos'
+    | '/usuarios'
   id:
     | '__root__'
     | '/_authenticated'
@@ -108,6 +120,7 @@ export interface FileRouteTypes {
     | '/_authenticated/productos/nuevo'
     | '/_authenticated/categorias/'
     | '/_authenticated/productos/'
+    | '/_authenticated/usuarios/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -136,6 +149,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/usuarios/': {
+      id: '/_authenticated/usuarios/'
+      path: '/usuarios'
+      fullPath: '/usuarios/'
+      preLoaderRoute: typeof AuthenticatedUsuariosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/productos/': {
@@ -175,6 +195,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProductosNuevoRoute: typeof AuthenticatedProductosNuevoRoute
   AuthenticatedCategoriasIndexRoute: typeof AuthenticatedCategoriasIndexRoute
   AuthenticatedProductosIndexRoute: typeof AuthenticatedProductosIndexRoute
+  AuthenticatedUsuariosIndexRoute: typeof AuthenticatedUsuariosIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -183,6 +204,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProductosNuevoRoute: AuthenticatedProductosNuevoRoute,
   AuthenticatedCategoriasIndexRoute: AuthenticatedCategoriasIndexRoute,
   AuthenticatedProductosIndexRoute: AuthenticatedProductosIndexRoute,
+  AuthenticatedUsuariosIndexRoute: AuthenticatedUsuariosIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -25,11 +24,13 @@ const schema = z.object({
     .string()
     .min(1, 'Slug requerido')
     .regex(/^[a-z0-9-]+$/, 'Solo minúsculas, números y guiones'),
-  precio: z.coerce.number().min(0, 'Precio debe ser ≥ 0'),
+  precio: z.coerce
+    .number({ invalid_type_error: 'Ingresa un precio válido' })
+    .min(0, 'El precio no puede ser negativo'),
   descripcion: z.string().default(''),
   estado: z.enum(['disponible', 'agotado']),
   destacado: z.boolean().default(false),
-  category_ids: z.array(z.string()).default([]),
+  category_ids: z.array(z.string()).min(1, 'Selecciona al menos una categoría'),
 })
 
 export type ProductFormValues = z.infer<typeof schema>
@@ -37,6 +38,7 @@ export type ProductFormValues = z.infer<typeof schema>
 interface ProductFormProps {
   defaultValues?: Partial<Product & { category_ids: string[] }>
   onSubmit: (values: ProductFormValues) => Promise<void>
+  onCancel?: () => void
   isLoading?: boolean
   submitLabel?: string
 }
@@ -44,6 +46,7 @@ interface ProductFormProps {
 export function ProductForm({
   defaultValues,
   onSubmit,
+  onCancel,
   isLoading,
   submitLabel = 'Guardar',
 }: ProductFormProps) {
@@ -83,7 +86,7 @@ export function ProductForm({
     const next = categoryIds.includes(id)
       ? categoryIds.filter((c) => c !== id)
       : [...categoryIds, id]
-    setValue('category_ids', next)
+    setValue('category_ids', next, { shouldValidate: true })
   }
 
   return (
@@ -123,8 +126,8 @@ export function ProductForm({
           id="precio"
           type="number"
           min={0}
-          step={50}
           {...register('precio')}
+          onFocus={(e) => e.target.select()}
           className="max-w-48"
           aria-invalid={!!errors.precio}
         />
@@ -183,25 +186,46 @@ export function ProductForm({
       {/* Categorías */}
       {categories && categories.length > 0 && (
         <div className="flex flex-col gap-2">
-          <Label>Categorías</Label>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {categories.map((cat) => (
-              <label
-                key={cat.id}
-                className="flex items-center gap-2 cursor-pointer text-sm"
-              >
-                <Checkbox
-                  checked={categoryIds.includes(cat.id)}
-                  onCheckedChange={() => toggleCategory(cat.id)}
-                />
-                {cat.nombre}
-              </label>
-            ))}
+          <Label>
+            Categorías <span className="text-destructive">*</span>
+          </Label>
+          <div
+            className={`flex flex-wrap gap-2 rounded-lg p-2 transition-colors ${
+              errors.category_ids
+                ? 'ring-1 ring-destructive/60 bg-destructive/5'
+                : 'ring-0'
+            }`}
+          >
+            {categories.map((cat) => {
+              const selected = categoryIds.includes(cat.id)
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => toggleCategory(cat.id)}
+                  className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                    selected
+                      ? 'bg-accent text-white border-accent'
+                      : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
+                  }`}
+                >
+                  {cat.nombre}
+                </button>
+              )
+            })}
           </div>
+          {errors.category_ids && (
+            <p className="text-xs text-destructive">Selecciona al menos una categoría</p>
+          )}
         </div>
       )}
 
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-end gap-2 pt-2">
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+            Cancelar
+          </Button>
+        )}
         <Button type="submit" disabled={isLoading}>
           {isLoading ? 'Guardando…' : submitLabel}
         </Button>

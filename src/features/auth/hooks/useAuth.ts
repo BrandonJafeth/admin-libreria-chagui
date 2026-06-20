@@ -1,8 +1,12 @@
 import { useEffect } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '../store/auth-store'
 
 export function useAuth() {
+  const navigate = useNavigate()
+  const qc = useQueryClient()
   const setSession = useAuthStore((s) => s.setSession)
   const setLoading = useAuthStore((s) => s.setLoading)
   const state = useAuthStore()
@@ -28,6 +32,10 @@ export function useAuth() {
     user: state.user,
     isLoading: state.isLoading,
     isAuthenticated: state.isAuthenticated,
-    signOut: () => supabase.auth.signOut(),
+    signOut: async () => {
+      await supabase.auth.signOut()
+      qc.clear()
+      navigate({ to: '/login' })
+    },
   }
 }

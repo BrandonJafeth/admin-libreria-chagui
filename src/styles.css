@@ -1,10 +1,7 @@
+@import '@fontsource/poppins/400.css';
 @import '@fontsource/poppins/500.css';
 @import '@fontsource/poppins/600.css';
 @import '@fontsource/poppins/700.css';
-@import '@fontsource/inter/300.css';
-@import '@fontsource/inter/400.css';
-@import '@fontsource/inter/500.css';
-@import '@fontsource/inter/600.css';
 
 @import "tailwindcss";
 
@@ -16,7 +13,7 @@
   --color-accent-2:   hsl(211 50% 36%);
   --color-accent-3:   hsl(36 80% 58%);
   --font-heading:     'Poppins', sans-serif;
-  --font-body:        'Inter', sans-serif;
+  --font-body:        'Poppins', sans-serif;
 
   /* shadcn-compatible tokens — mapped to brand palette */
   --color-primary:                  hsl(6 63% 46%);
@@ -29,19 +26,21 @@
   --color-popover:                  hsl(0 0% 100%);
   --color-popover-foreground:       hsl(0 0% 17%);
   --color-accent-foreground:        hsl(0 0% 100%);
-  --color-border:                   rgba(43, 43, 43, 0.1);
+  --color-border:                   rgba(43, 43, 43, 0.08);
   --color-input:                    rgba(43, 43, 43, 0.1);
   --color-destructive:              hsl(0 72% 51%);
   --color-destructive-foreground:   hsl(0 0% 100%);
   --color-ring:                     hsl(6 63% 46%);
-  --color-sidebar:                  hsl(0 0% 99%);
+  /* Sidebar same crema as page background — editorial, not white */
+  --color-sidebar:                  hsl(37 33% 96%);
 
-  /* Radius */
-  --radius-sm:  0.375rem;
-  --radius-md:  0.5rem;
-  --radius-lg:  0.75rem;
-  --radius-xl:  1rem;
-  --radius-2xl: 1.25rem;
+  /* Sharp corners everywhere — no radius on any surface */
+  --radius:     0;
+  --radius-sm:  0;
+  --radius-md:  0;
+  --radius-lg:  0;
+  --radius-xl:  0;
+  --radius-2xl: 0;
 }
 
 @layer base {

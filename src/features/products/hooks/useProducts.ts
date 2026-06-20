@@ -11,5 +11,6 @@ export function useProducts(filters?: ProductFilters) {
   return useQuery({
     queryKey: productsQueryKey(filters),
     queryFn: () => fetchProducts(filters),
+    placeholderData: (prev) => prev,
   })
 }

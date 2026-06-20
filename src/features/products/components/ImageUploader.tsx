@@ -1,120 +1,287 @@
-import { useRef } from 'react'
-import { Trash2, Star, StarOff, Upload } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect, useRef } from 'react'
+import { Trash2, Star, Upload, GripVertical, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import {
   useUploadProductImage,
   useDeleteProductImage,
   useSetMainImage,
+  useUpsertProductColor,
+  useReorderImages,
 } from '../hooks/useProductMutations'
 import type { ProductImage } from '../api/products.api'
+import { extractDominantColor } from '@/lib/colorExtractor'
+import {
+  draggable,
+  dropTargetForElements,
+  monitorForElements,
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 
 interface ImageUploaderProps {
   productId: string
   images: ProductImage[]
+  colorsCount?: number
 }
 
-export function ImageUploader({ productId, images }: ImageUploaderProps) {
+export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [localImages, setLocalImages] = useState<ProductImage[]>([])
+  const [pendingCount, setPendingCount] = useState(0)
+  const [isDragOver, setIsDragOver] = useState(false)
 
   const uploadMutation = useUploadProductImage(productId)
   const deleteMutation = useDeleteProductImage(productId)
   const setMainMutation = useSetMainImage(productId)
+  const upsertColorMutation = useUpsertProductColor(productId)
+  const reorderMutation = useReorderImages(productId)
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const localImagesRef = useRef(localImages)
+  localImagesRef.current = localImages
+  const reorderRef = useRef(reorderMutation.mutate)
+  reorderRef.current = reorderMutation.mutate
 
-    const orden = images.length
-    const esPrincipal = images.length === 0
+  useEffect(() => {
+    setLocalImages([...images].sort((a, b) => a.orden - b.orden))
+  }, [images])
 
-    await uploadMutation.mutateAsync({ file, orden, esPrincipal })
-    e.target.value = ''
+  // DnD reorder monitor
+  useEffect(() => {
+    return monitorForElements({
+      onDrop({ source, location }) {
+        const dest = location.current.dropTargets[0]
+        if (!dest) return
+        const srcId = source.data.id as string
+        const dstId = dest.data.id as string
+        if (srcId === dstId) return
+        const imgs = localImagesRef.current
+        const srcIdx = imgs.findIndex((i) => i.id === srcId)
+        const dstIdx = imgs.findIndex((i) => i.id === dstId)
+        if (srcIdx === -1 || dstIdx === -1) return
+        const next = [...imgs]
+        const [moved] = next.splice(srcIdx, 1)
+        next.splice(dstIdx, 0, moved)
+        setLocalImages(next)
+        reorderRef.current(next.map((img, idx) => ({ id: img.id, orden: idx })))
+      },
+    })
+  }, [])
+
+  async function uploadFiles(files: FileList | File[]) {
+    const arr = Array.from(files).filter((f) => f.type.startsWith('image/'))
+    if (!arr.length) return
+    setPendingCount((c) => c + arr.length)
+    const baseOrden = localImagesRef.current.length
+
+    await Promise.all(
+      arr.map(async (file, i) => {
+        try {
+          await uploadMutation.mutateAsync({
+            file,
+            orden: baseOrden + i,
+            esPrincipal: baseOrden === 0 && i === 0,
+          })
+          extractDominantColor(file)
+            .then((hex) =>
+              upsertColorMutation.mutate({
+                nombre: `Color ${colorsCount + baseOrden + i + 1}`,
+                hex,
+                orden: colorsCount + baseOrden + i,
+              }),
+            )
+            .catch(() => {})
+        } finally {
+          setPendingCount((c) => c - 1)
+        }
+      }),
+    )
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files?.length) {
+      uploadFiles(e.target.files)
+      e.target.value = ''
+    }
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    if (!e.dataTransfer.types.includes('Files')) return
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragOver(false)
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragOver(false)
+    if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files)
   }
 
   return (
     <div className="space-y-3">
       <Label>Imágenes</Label>
 
-      {images.length > 0 && (
+      {localImages.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {images.map((img) => (
-            <div
+          {localImages.map((img) => (
+            <DraggableImageCard
               key={img.id}
-              className="relative group rounded-lg overflow-hidden border border-border bg-muted aspect-square"
-            >
-              <img
-                src={img.url}
-                alt={img.alt ?? ''}
-                className="w-full h-full object-cover"
-              />
-
-              {img.es_principal && (
-                <span className="absolute top-1 left-1 rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                  Principal
-                </span>
-              )}
-
-              <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                {!img.es_principal && (
-                  <button
-                    onClick={() => setMainMutation.mutate(img.id)}
-                    disabled={setMainMutation.isPending}
-                    title="Marcar como principal"
-                    className="rounded-full bg-white/90 p-1.5 text-foreground hover:bg-white transition-colors"
-                  >
-                    <Star className="h-3.5 w-3.5" />
-                  </button>
-                )}
-                {img.es_principal && (
-                  <span
-                    title="Ya es principal"
-                    className="rounded-full bg-accent/90 p-1.5 text-white"
-                  >
-                    <StarOff className="h-3.5 w-3.5" />
-                  </span>
-                )}
-                <button
-                  onClick={() =>
-                    deleteMutation.mutate({ imageId: img.id, url: img.url })
-                  }
-                  disabled={deleteMutation.isPending}
-                  title="Eliminar imagen"
-                  className="rounded-full bg-white/90 p-1.5 text-destructive hover:bg-white transition-colors"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
+              image={img}
+              onSetMain={() => setMainMutation.mutate(img.id)}
+              onDelete={() => deleteMutation.mutate({ imageId: img.id, url: img.url })}
+              isDeleting={deleteMutation.isPending && (deleteMutation.variables as { imageId: string })?.imageId === img.id}
+              isSettingMain={setMainMutation.isPending}
+            />
           ))}
         </div>
       )}
 
-      <div>
+      {/* Upload zone */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => pendingCount === 0 && fileInputRef.current?.click()}
+        className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 transition-colors select-none ${
+          pendingCount > 0
+            ? 'border-border cursor-default'
+            : isDragOver
+              ? 'border-accent bg-accent/5 text-accent cursor-copy'
+              : 'border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground cursor-pointer'
+        }`}
+      >
+        {pendingCount > 0 ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin text-accent" />
+            <p className="text-sm font-medium text-foreground">
+              Subiendo {pendingCount} imagen{pendingCount !== 1 ? 'es' : ''}…
+            </p>
+          </>
+        ) : (
+          <>
+            <Upload className="h-5 w-5" />
+            <p className="text-sm font-medium">
+              {isDragOver ? 'Suelta aquí' : 'Arrastra imágenes o haz click'}
+            </p>
+            <p className="text-xs opacity-60">Puedes subir varias a la vez</p>
+          </>
+        )}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           className="hidden"
           onChange={handleFileChange}
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploadMutation.isPending}
-        >
-          <Upload className="h-4 w-4" />
-          {uploadMutation.isPending ? 'Subiendo…' : 'Subir imagen'}
-        </Button>
       </div>
 
-      {images.length === 0 && (
+      {localImages.length === 0 && pendingCount === 0 && (
         <p className="text-xs text-muted-foreground">
           La primera imagen subida será la principal automáticamente.
         </p>
       )}
+    </div>
+  )
+}
+
+// ─── Draggable Image Card ────────────────────────────────────────────────────
+
+interface DraggableImageCardProps {
+  image: ProductImage
+  onSetMain: () => void
+  onDelete: () => void
+  isDeleting: boolean
+  isSettingMain: boolean
+}
+
+function DraggableImageCard({
+  image,
+  onSetMain,
+  onDelete,
+  isDeleting,
+  isSettingMain,
+}: DraggableImageCardProps) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const [isOver, setIsOver] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const cleanup1 = draggable({
+      element: el,
+      getInitialData: () => ({ id: image.id }),
+      onDragStart: () => setDragging(true),
+      onDrop: () => setDragging(false),
+    })
+    const cleanup2 = dropTargetForElements({
+      element: el,
+      getData: () => ({ id: image.id }),
+      onDragEnter: () => setIsOver(true),
+      onDragLeave: () => setIsOver(false),
+      onDrop: () => setIsOver(false),
+    })
+    return () => {
+      cleanup1()
+      cleanup2()
+    }
+  }, [image.id])
+
+  return (
+    <div
+      ref={ref}
+      className={`rounded-xl overflow-hidden border flex flex-col transition-all duration-150 ${
+        dragging
+          ? 'opacity-30 scale-95'
+          : isOver
+            ? 'border-accent ring-2 ring-accent/30'
+            : 'border-border'
+      }`}
+    >
+      <div className="relative aspect-square bg-muted overflow-hidden cursor-grab active:cursor-grabbing">
+        <img src={image.url} alt={image.alt ?? ''} className="w-full h-full object-cover" />
+
+        {image.es_principal && (
+          <span className="absolute top-1.5 left-1.5 rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+            Principal
+          </span>
+        )}
+
+        <div className="absolute top-1.5 right-1.5 rounded-md bg-black/25 p-1 pointer-events-none">
+          <GripVertical className="h-3 w-3 text-white/70" />
+        </div>
+      </div>
+
+      <div className="flex items-center border-t border-border/60 bg-card">
+        {image.es_principal ? (
+          <div className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-accent">
+            <Star className="h-3.5 w-3.5" fill="currentColor" />
+            Principal
+          </div>
+        ) : (
+          <button
+            onClick={onSetMain}
+            disabled={isSettingMain}
+            title="Establecer como principal"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-muted-foreground hover:text-amber-500 hover:bg-amber-50/10 transition-colors disabled:opacity-40"
+          >
+            <Star className="h-3.5 w-3.5" />
+            Principal
+          </button>
+        )}
+        <div className="w-px h-5 bg-border/60 shrink-0" />
+        <button
+          onClick={onDelete}
+          disabled={isDeleting}
+          title="Eliminar imagen"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-destructive hover:bg-destructive/8 transition-colors disabled:opacity-40"
+        >
+          {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+          Eliminar
+        </button>
+      </div>
     </div>
   )
 }

@@ -6,7 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatPrice(precio: number): string {
-  return `₡${precio.toLocaleString('es-CR')}`
+  // Spec: dot as thousands separator → ₡12.500
+  return `₡${precio.toLocaleString('es-ES')}`
 }
 
 export function generateSlug(text: string): string {

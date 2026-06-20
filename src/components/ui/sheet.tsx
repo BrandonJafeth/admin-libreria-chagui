@@ -24,18 +24,23 @@ function SheetOverlay({
 
 interface SheetContentProps extends React.ComponentProps<typeof DialogPrimitive.Content> {
   side?: 'right' | 'left'
+  /** Allow closing by clicking the backdrop. Defaults to false to prevent accidental data loss. */
+  closeOnOutsideClick?: boolean
 }
 
 function SheetContent({
   className,
   children,
   side = 'right',
+  closeOnOutsideClick = false,
   ...props
 }: SheetContentProps) {
   return (
     <SheetPortal>
       <SheetOverlay />
       <DialogPrimitive.Content
+        onPointerDownOutside={closeOnOutsideClick ? undefined : (e) => e.preventDefault()}
+        onInteractOutside={closeOnOutsideClick ? undefined : (e) => e.preventDefault()}
         className={cn(
           'fixed top-0 z-50 flex h-full flex-col bg-card focus:outline-none',
           side === 'right'

@@ -14,7 +14,6 @@ const schema = z.object({
     .string()
     .min(1, 'Slug requerido')
     .regex(/^[a-z0-9-]+$/, 'Solo minúsculas, números y guiones'),
-  orden: z.coerce.number().int().min(0),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -43,7 +42,6 @@ export function CategoryForm({
     defaultValues: {
       nombre: defaultValues?.nombre ?? '',
       slug: defaultValues?.slug ?? '',
-      orden: defaultValues?.orden ?? 0,
     },
   })
 
@@ -82,17 +80,6 @@ export function CategoryForm({
         {errors.slug && (
           <p className="text-xs text-destructive">{errors.slug.message}</p>
         )}
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="orden">Orden</Label>
-        <Input
-          id="orden"
-          type="number"
-          min={0}
-          {...register('orden')}
-          className="w-24"
-        />
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
