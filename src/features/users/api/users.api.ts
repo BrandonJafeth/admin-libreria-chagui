@@ -20,9 +20,10 @@ export async function fetchMyRole(): Promise<'admin' | 'employee'> {
   if (!user) return 'employee'
   // Try by id first; fall back to email if profiles.id doesn't match auth uid
   const byId = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
-  if (!byId.error && byId.data) return byId.data.role as 'admin' | 'employee'
+  if (!byId.error && byId.data) return byId.data.role
+  if (!user.email) return 'employee'
   const byEmail = await supabase.from('profiles').select('role').eq('email', user.email).maybeSingle()
-  if (!byEmail.error && byEmail.data) return byEmail.data.role as 'admin' | 'employee'
+  if (!byEmail.error && byEmail.data) return byEmail.data.role
   return 'employee'
 }
 

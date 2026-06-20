@@ -25,7 +25,7 @@ const schema = z.object({
     .min(1, 'Slug requerido')
     .regex(/^[a-z0-9-]+$/, 'Solo minúsculas, números y guiones'),
   precio: z.coerce
-    .number({ invalid_type_error: 'Ingresa un precio válido' })
+    .number({ error: 'Ingresa un precio válido' })
     .min(0, 'El precio no puede ser negativo'),
   descripcion: z.string().default(''),
   estado: z.enum(['disponible', 'agotado']),

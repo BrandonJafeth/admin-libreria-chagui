@@ -123,6 +123,27 @@ export interface Database {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          email: string
+          role: 'admin' | 'employee'
+          created_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          role?: 'admin' | 'employee'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          role?: 'admin' | 'employee'
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
