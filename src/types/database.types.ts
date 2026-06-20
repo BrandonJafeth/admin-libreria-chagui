@@ -25,6 +25,7 @@ export interface Database {
           orden?: number
           created_at?: string
         }
+        Relationships: []
       }
       products: {
         Row: {
@@ -60,11 +61,13 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       product_categories: {
         Row: { product_id: string; category_id: string }
         Insert: { product_id: string; category_id: string }
         Update: { product_id?: string; category_id?: string }
+        Relationships: []
       }
       product_images: {
         Row: {
@@ -94,6 +97,7 @@ export interface Database {
           alt?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       product_colors: {
         Row: {
@@ -117,6 +121,7 @@ export interface Database {
           hex?: string | null
           orden?: number
         }
+        Relationships: []
       }
     }
     Views: Record<string, never>
