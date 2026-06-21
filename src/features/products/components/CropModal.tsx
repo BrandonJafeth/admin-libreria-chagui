@@ -9,6 +9,9 @@ import 'react-image-crop/dist/ReactCrop.css'
 import { Button } from '@/components/ui/button'
 import { Crop as CropIcon, RotateCcw, RotateCw, Loader2 } from 'lucide-react'
 
+// Large images cause sluggish crop interaction — downsample to this before display
+const MAX_DISPLAY_PX = 1400
+
 interface CropModalProps {
   file: File
   current: number
@@ -36,12 +39,56 @@ export function CropModal({
   const rotatedUrlsRef = useRef<string[]>([])
 
   useEffect(() => {
-    const url = URL.createObjectURL(file)
-    setDisplayUrl(url)
+    let cancelled = false
+    // local list of URLs created in this effect — all revoked on cleanup
+    const urls: string[] = []
+
+    async function prepare() {
+      const raw = URL.createObjectURL(file)
+      urls.push(raw)
+
+      const img = new Image()
+      await new Promise<void>((res, rej) => {
+        img.onload = () => res()
+        img.onerror = rej
+        img.src = raw
+      })
+      if (cancelled) return
+
+      const { naturalWidth: w, naturalHeight: h } = img
+      const longest = Math.max(w, h)
+
+      if (longest <= MAX_DISPLAY_PX) {
+        setDisplayUrl(raw)
+        return
+      }
+
+      // Downsample: renders much faster in the crop UI
+      const scale = MAX_DISPLAY_PX / longest
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(w * scale)
+      canvas.height = Math.round(h * scale)
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+      const blob = await new Promise<Blob | null>((res) =>
+        canvas.toBlob(res, 'image/jpeg', 0.95),
+      )
+      if (cancelled || !blob) return
+
+      const scaled = URL.createObjectURL(blob)
+      urls.push(scaled)
+      setDisplayUrl(scaled)
+    }
+
     setCrop(undefined)
     setCompletedCrop(undefined)
+    setDisplayUrl('')
+
+    prepare().catch(() => {})
+
     return () => {
-      URL.revokeObjectURL(url)
+      cancelled = true
+      urls.forEach((u) => URL.revokeObjectURL(u))
       rotatedUrlsRef.current.forEach((u) => URL.revokeObjectURL(u))
       rotatedUrlsRef.current = []
       setDisplayUrl('')
@@ -90,7 +137,7 @@ export function CropModal({
           <div className="flex items-center gap-2">
             <CropIcon className="h-4 w-4 text-accent" />
             <span className="font-heading text-sm font-semibold">
-              {busy
+              {isUploading
                 ? 'Subiendo…'
                 : `Recortar imagen ${current} de ${total}`}
             </span>
@@ -116,8 +163,8 @@ export function CropModal({
           </div>
         </div>
 
-        <div className="flex max-h-[60vh] justify-center overflow-auto">
-          {displayUrl && (
+        <div className="flex justify-center">
+          {displayUrl ? (
             <ReactCrop
               crop={crop}
               onChange={(c) => setCrop(c)}
@@ -133,8 +180,13 @@ export function CropModal({
                 alt="Recortar"
                 onLoad={onImageLoad}
                 className="max-h-[55vh] max-w-full object-contain"
+                style={{ display: 'block' }}
               />
             </ReactCrop>
+          ) : (
+            <div className="flex h-48 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           )}
         </div>
 

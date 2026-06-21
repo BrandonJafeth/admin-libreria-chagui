@@ -48,19 +48,17 @@ function welcomeEmailHtml(email: string, password: string, role: string): string
 
         <!-- Credentials box -->
         <div style="background:#f9f5f0;border:1px solid #e8e0d6;padding:20px;margin-bottom:24px;">
-          <p style="margin:0 0 12px 0;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#888;">
+          <p style="margin:0 0 16px 0;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#888;">
             Credenciales de acceso
           </p>
-          <table style="width:100%;border-collapse:collapse;">
-            <tr>
-              <td style="padding:6px 0;font-size:12px;color:#888;width:90px;">Correo</td>
-              <td style="padding:6px 0;font-size:13px;color:#2b2b2b;font-weight:600;">${email}</td>
-            </tr>
-            <tr>
-              <td style="padding:6px 0;font-size:12px;color:#888;">Contraseña</td>
-              <td style="padding:6px 0;font-size:13px;color:#2b2b2b;font-weight:600;font-family:monospace;">${password}</td>
-            </tr>
-          </table>
+          <div style="margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#aaa;margin-bottom:4px;">Correo</div>
+            <div style="font-size:13px;color:#2b2b2b;font-weight:600;word-break:break-all;">${email}</div>
+          </div>
+          <div style="border-top:1px solid #e8e0d6;padding-top:14px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#aaa;margin-bottom:4px;">Contraseña</div>
+            <div style="font-size:15px;color:#2b2b2b;font-weight:700;font-family:monospace;letter-spacing:2px;">${password}</div>
+          </div>
         </div>
 
         <!-- Warning -->
