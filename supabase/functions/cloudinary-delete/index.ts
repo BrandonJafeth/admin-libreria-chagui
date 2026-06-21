@@ -5,6 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Mirrors src/lib/cloudinary.ts extractPublicId
+function extractPublicId(url: string): string {
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/)
+  return match?.[1] ?? ''
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -16,14 +22,14 @@ Deno.serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
-    // Verify caller is an authenticated Supabase user
-    const supabase = createClient(
+    // Verify caller JWT
+    const supabaseAuth = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } },
     )
-    const { error: authError } = await supabase.auth.getUser()
-    if (authError) {
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+    if (authError || !user) {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
     }
 
@@ -32,6 +38,29 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ results: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    // Use service role to validate public_ids without being subject to RLS
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
+
+    // Verify all requested public_ids exist in product_images (whitelist check)
+    const { data: allImages } = await supabaseAdmin
+      .from('product_images')
+      .select('url')
+
+    const knownPublicIds = new Set(
+      (allImages ?? []).map((img: { url: string }) => extractPublicId(img.url)).filter(Boolean),
+    )
+
+    const unknownIds = public_ids.filter((id) => !knownPublicIds.has(id))
+    if (unknownIds.length > 0) {
+      return new Response(
+        JSON.stringify({ error: 'public_ids no encontrados en product_images', ids: unknownIds }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     const cloudName = Deno.env.get('CLOUDINARY_CLOUD_NAME')!

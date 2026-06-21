@@ -13,7 +13,7 @@ import {
   deleteProductColor,
   type ProductInsert,
   type ProductUpdate,
-  type ProductListItem,
+  type ProductsPage,
 } from '../api/products.api'
 import { PRODUCTS_KEY } from './useProducts'
 import { productQueryKey } from './useProduct'
@@ -69,9 +69,9 @@ export function useToggleEstado(productId: string) {
       toggleProductEstado(productId, estado),
     onMutate: async (newEstado) => {
       await qc.cancelQueries({ queryKey: PRODUCTS_KEY })
-      qc.setQueriesData<ProductListItem[]>(
+      qc.setQueriesData<ProductsPage>(
         { queryKey: PRODUCTS_KEY },
-        (old) => old?.map((p) => (p.id === productId ? { ...p, estado: newEstado } : p)),
+        (old) => old ? { ...old, data: old.data.map((p) => p.id === productId ? { ...p, estado: newEstado } : p) } : old,
       )
     },
     onSettled: () => {
@@ -87,9 +87,9 @@ export function useToggleDestacado(productId: string) {
     mutationFn: (destacado: boolean) => toggleProductDestacado(productId, destacado),
     onMutate: async (newDestacado) => {
       await qc.cancelQueries({ queryKey: PRODUCTS_KEY })
-      qc.setQueriesData<ProductListItem[]>(
+      qc.setQueriesData<ProductsPage>(
         { queryKey: PRODUCTS_KEY },
-        (old) => old?.map((p) => (p.id === productId ? { ...p, destacado: newDestacado } : p)),
+        (old) => old ? { ...old, data: old.data.map((p) => p.id === productId ? { ...p, destacado: newDestacado } : p) } : old,
       )
     },
     onSettled: () => {
@@ -143,7 +143,7 @@ export function useReorderImages(productId: string) {
 }
 
 export function useUpsertProductColor(productId: string) {
-  const invalidate = useInvalidateProduct(productId)
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: (color: {
       id?: string
@@ -151,14 +151,14 @@ export function useUpsertProductColor(productId: string) {
       hex?: string | null
       orden: number
     }) => upsertProductColor(productId, color),
-    onSuccess: invalidate,
+    onSuccess: () => qc.invalidateQueries({ queryKey: productQueryKey(productId) }),
   })
 }
 
 export function useDeleteProductColor(productId: string) {
-  const invalidate = useInvalidateProduct(productId)
+  const qc = useQueryClient()
   return useMutation({
     mutationFn: (colorId: string) => deleteProductColor(colorId),
-    onSuccess: invalidate,
+    onSuccess: () => qc.invalidateQueries({ queryKey: productQueryKey(productId) }),
   })
 }

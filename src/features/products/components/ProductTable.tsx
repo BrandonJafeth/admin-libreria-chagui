@@ -48,6 +48,8 @@ import { ImageUploader } from './ImageUploader'
 import { ColorPicker } from './ColorPicker'
 import { formatPrice } from '@/lib/utils'
 import { useRouteContext } from '@tanstack/react-router'
+import { sileo } from 'sileo'
+import { td } from '@/lib/td'
 import { useProducts } from '../hooks/useProducts'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { fetchProduct } from '../api/products.api'
@@ -127,19 +129,27 @@ export function ProductTable() {
 
   async function handleCreate(values: ProductFormValues) {
     const { category_ids, ...product } = values
-    const created = await createMutation.mutateAsync({
-      product: {
-        nombre: product.nombre,
-        slug: product.slug,
-        precio: product.precio,
-        descripcion: product.descripcion,
-        estado: product.estado,
-        destacado: product.destacado,
-      },
-      categoryIds: category_ids,
-    })
-    setCreating(false)
-    setEditingId(created.id)
+    try {
+      const created = await createMutation.mutateAsync({
+        product: {
+          nombre: product.nombre,
+          slug: product.slug,
+          precio: product.precio,
+          descripcion: product.descripcion,
+          estado: product.estado,
+          destacado: product.destacado,
+        },
+        categoryIds: category_ids,
+      })
+      setCreating(false)
+      setEditingId(created.id)
+      sileo.success({
+        title: 'Producto creado',
+        description: td('**Siguiente paso:** sube imágenes y configura colores.\n- Imágenes desde la pestaña de fotos\n- Colores desde la paleta'),
+      })
+    } catch (err) {
+      sileo.error({ title: 'Error al crear producto', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+    }
   }
 
   async function confirmDelete() {
@@ -147,8 +157,9 @@ export function ProductTable() {
     try {
       await deleteMutation.mutateAsync(pendingDelete.id)
       setPendingDelete(null)
+      sileo.success({ title: 'Producto eliminado' })
     } catch {
-      // error shown in dialog description via deleteMutation.isError
+      sileo.error({ title: 'Error al eliminar producto' })
     }
   }
 
@@ -528,7 +539,7 @@ export function ProductTable() {
       />
 
       {/* ── Create sheet ── */}
-      <Sheet open={creating} onOpenChange={setCreating}>
+      <Sheet open={creating} onOpenChange={(open) => { if (!open) createMutation.reset(); setCreating(open) }}>
         <SheetContent className="sm:max-w-lg">
           <SheetHeader>
             <SheetTitle>Nuevo producto</SheetTitle>
@@ -748,7 +759,12 @@ function ProductEditSheet({ productId, open, onOpenChange }: ProductEditSheetPro
 
   async function handleSubmit(values: ProductFormValues) {
     const { category_ids, ...updates } = values
-    await updateMutation.mutateAsync({ updates, categoryIds: category_ids })
+    try {
+      await updateMutation.mutateAsync({ updates, categoryIds: category_ids })
+      sileo.success({ title: 'Producto actualizado' })
+    } catch (err) {
+      sileo.error({ title: 'Error al actualizar', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+    }
   }
 
   return (

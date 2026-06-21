@@ -1,10 +1,11 @@
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { productQueryKey } from '@/features/products/hooks/useProduct'
 import { fetchProduct } from '@/features/products/api/products.api'
 import { useProduct } from '@/features/products/hooks/useProduct'
 import { useUpdateProduct } from '@/features/products/hooks/useProductMutations'
 import { ProductForm, type ProductFormValues } from '@/features/products/components/ProductForm'
+import { sileo } from 'sileo'
 import { ImageUploader } from '@/features/products/components/ImageUploader'
 import { ColorPicker } from '@/features/products/components/ColorPicker'
 import { Separator } from '@/components/ui/separator'
@@ -30,10 +31,18 @@ function ProductDetailPage() {
   const { productId } = Route.useParams()
   const { data: product } = useProduct(productId)
   const updateMutation = useUpdateProduct(productId)
+  const [apiError, setApiError] = useState<string | undefined>()
 
   async function handleSubmit(values: ProductFormValues) {
+    setApiError(undefined)
     const { category_ids, ...updates } = values
-    await updateMutation.mutateAsync({ updates, categoryIds: category_ids })
+    try {
+      await updateMutation.mutateAsync({ updates, categoryIds: category_ids })
+      sileo.success({ title: 'Producto actualizado' })
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Error desconocido. Intenta de nuevo.')
+      sileo.error({ title: 'Error al actualizar' })
+    }
   }
 
   const currentCategoryIds = product.product_categories.map((pc) => pc.category_id)
@@ -58,12 +67,8 @@ function ProductDetailPage() {
           onSubmit={handleSubmit}
           isLoading={updateMutation.isPending}
           submitLabel="Actualizar"
+          apiError={apiError}
         />
-        {updateMutation.isError && (
-          <p className="text-sm text-destructive mt-2">
-            {updateMutation.error.message}
-          </p>
-        )}
       </section>
 
       {/* Images */}
@@ -72,7 +77,7 @@ function ProductDetailPage() {
           Imágenes
         </h2>
         <Separator className="mb-4" />
-        <ImageUploader productId={productId} images={product.product_images} />
+        <ImageUploader productId={productId} images={product.product_images} colorsCount={product.product_colors.length} />
       </section>
 
       {/* Colors */}

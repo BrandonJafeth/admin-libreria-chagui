@@ -52,7 +52,7 @@ function KpiCard({ label, value, meta, icon: Icon, tone = 'accent', loading }: K
   return (
     <div
       className={cn(
-        'relative bg-card border border-border overflow-hidden group cursor-default',
+        'relative bg-card border border-border rounded-xl overflow-hidden group cursor-default',
         'shadow-[0_1px_4px_rgba(0,0,0,0.04)]',
         'transition-all duration-200 hover:-translate-y-px hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)]',
         loading && 'opacity-60',

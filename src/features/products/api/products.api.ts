@@ -130,7 +130,8 @@ export async function deleteProduct(id: string): Promise<void> {
   if (images && images.length > 0) {
     const publicIds = images.map((img) => extractPublicId(img.url)).filter(Boolean)
     if (publicIds.length > 0) {
-      await supabase.functions.invoke('cloudinary-delete', { body: { public_ids: publicIds } })
+      const { error: cloudErr } = await supabase.functions.invoke('cloudinary-delete', { body: { public_ids: publicIds } })
+      if (cloudErr) console.error('[deleteProduct] Cloudinary cleanup failed:', cloudErr.message)
     }
   }
 
@@ -180,7 +181,10 @@ export async function deleteProductImage(
 ): Promise<void> {
   const publicId = extractPublicId(url)
   if (publicId) {
-    await supabase.functions.invoke('cloudinary-delete', { body: { public_ids: [publicId] } })
+    const { error: cloudErr } = await supabase.functions.invoke('cloudinary-delete', {
+      body: { public_ids: [publicId] },
+    })
+    if (cloudErr) throw new Error(cloudErr.message)
   }
   const { error } = await supabase.from('product_images').delete().eq('id', imageId)
   if (error) throw error
@@ -200,11 +204,13 @@ export async function setMainImage(
 export async function reorderProductImages(
   updates: { id: string; orden: number }[],
 ): Promise<void> {
-  await Promise.all(
+  const results = await Promise.all(
     updates.map(({ id, orden }) =>
       supabase.from('product_images').update({ orden }).eq('id', id),
     ),
   )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw failed.error
 }
 
 // Colors

@@ -1,19 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { Pencil, Trash2, GripVertical, Plus, ChevronUp, ChevronDown } from 'lucide-react'
+import { Pencil, Trash2, GripVertical, Plus, ChevronUp, ChevronDown, Tag, FolderOpen } from 'lucide-react'
 import {
   draggable,
   dropTargetForElements,
   monitorForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   Sheet,
   SheetContent,
@@ -30,14 +22,17 @@ import {
   useReorderCategories,
 } from '../hooks/useCategoryMutations'
 import type { Category } from '../api/categories.api'
+import { sileo } from 'sileo'
 import { cn } from '@/lib/utils'
 
 type DragState = 'idle' | 'dragging' | 'over'
 
-function DraggableRow({
+// ─── Category Card ─────────────────────────────────────────────────────────────
+
+function CategoryCard({
   cat,
-  isFirst,
-  isLast,
+  index,
+  total,
   onEdit,
   onDelete,
   onMoveUp,
@@ -45,115 +40,163 @@ function DraggableRow({
   isDeleting,
 }: {
   cat: Category
-  isFirst: boolean
-  isLast: boolean
+  index: number
+  total: number
   onEdit: () => void
   onDelete: () => void
   onMoveUp: () => void
   onMoveDown: () => void
   isDeleting: boolean
 }) {
-  const rowRef = useRef<HTMLTableRowElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
   const handleRef = useRef<HTMLButtonElement>(null)
   const [dragState, setDragState] = useState<DragState>('idle')
 
   useEffect(() => {
-    const row = rowRef.current
+    const el = cardRef.current
     const handle = handleRef.current
-    if (!row || !handle) return
+    if (!el || !handle) return
 
-    const cleanupDrag = draggable({
-      element: row,
+    const c1 = draggable({
+      element: el,
       dragHandle: handle,
       getInitialData: () => ({ id: cat.id }),
       onDragStart: () => setDragState('dragging'),
       onDrop: () => setDragState('idle'),
     })
-
-    const cleanupDrop = dropTargetForElements({
-      element: row,
+    const c2 = dropTargetForElements({
+      element: el,
       getData: () => ({ id: cat.id }),
       onDragEnter: () => setDragState('over'),
       onDragLeave: () => setDragState('idle'),
       onDrop: () => setDragState('idle'),
     })
-
-    return () => {
-      cleanupDrag()
-      cleanupDrop()
-    }
+    return () => { c1(); c2() }
   }, [cat.id])
 
+  const orderNum = String(index + 1).padStart(2, '0')
+
   return (
-    <TableRow
-      ref={rowRef}
+    <div
+      ref={cardRef}
       className={cn(
-        'transition-colors',
-        dragState === 'dragging' && 'opacity-40',
-        dragState === 'over' && 'bg-accent/10',
+        'group relative flex items-center gap-3 rounded-xl px-4 py-3.5',
+        'bg-card border border-border/60',
+        'transition-all duration-150 select-none',
+        'hover:border-border hover:shadow-sm hover:-translate-y-px',
+        dragState === 'dragging' && 'opacity-30 scale-[0.98] shadow-none translate-y-0',
+        dragState === 'over' && 'ring-2 ring-accent border-transparent bg-accent/3 translate-y-0',
       )}
     >
-      <TableCell className="w-10 pr-0">
-        {/* Desktop/Android: drag handle */}
+      {/* Left accent bar */}
+      <div
+        className={cn(
+          'absolute left-0 top-3 bottom-3 w-0.75 rounded-full bg-accent',
+          'origin-center transition-transform duration-200',
+          dragState === 'over' ? 'scale-y-100' : 'scale-y-0 group-hover:scale-y-100',
+        )}
+      />
+
+      {/* Mobile: up/down arrows */}
+      <div className="flex sm:hidden flex-col gap-0 shrink-0">
         <button
-          ref={handleRef}
-          aria-label="Arrastrar para reordenar"
-          className="touch-none hidden sm:flex items-center justify-center p-2 rounded cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground min-h-11 min-w-11"
+          onClick={onMoveUp}
+          disabled={index === 0}
+          aria-label="Mover arriba"
+          className="flex items-center justify-center w-5 h-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
         >
-          <GripVertical className="h-4 w-4" />
+          <ChevronUp className="h-3 w-3" />
         </button>
-        {/* Mobile (iOS safe): up/down arrows */}
-        <div className="flex sm:hidden flex-col items-center">
-          <button
-            onClick={onMoveUp}
-            disabled={isFirst}
-            aria-label="Mover arriba"
-            className="flex items-center justify-center p-1.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 min-h-6 min-w-6"
-          >
-            <ChevronUp className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={onMoveDown}
-            disabled={isLast}
-            aria-label="Mover abajo"
-            className="flex items-center justify-center p-1.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 min-h-6 min-w-6"
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </TableCell>
-      <TableCell className="font-medium">{cat.nombre}</TableCell>
-      <TableCell className="hidden sm:table-cell font-mono text-xs text-muted-foreground">
-        {cat.slug}
-      </TableCell>
-      <TableCell className="hidden md:table-cell w-20 text-muted-foreground text-sm">
-        {cat.orden ?? '—'}
-      </TableCell>
-      <TableCell className="w-24">
-        <div className="flex items-center justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onEdit}
-            aria-label="Editar"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onDelete}
-            disabled={isDeleting}
-            className="text-destructive hover:text-destructive"
-            aria-label="Eliminar"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
+        <button
+          onClick={onMoveDown}
+          disabled={index === total - 1}
+          aria-label="Mover abajo"
+          className="flex items-center justify-center w-5 h-5 rounded text-muted-foreground hover:text-foreground disabled:opacity-20 transition-colors"
+        >
+          <ChevronDown className="h-3 w-3" />
+        </button>
+      </div>
+
+      {/* Desktop: drag handle */}
+      <button
+        ref={handleRef}
+        aria-label="Arrastrar para reordenar"
+        className={cn(
+          'hidden sm:flex touch-none items-center justify-center',
+          'w-6 h-8 rounded text-muted-foreground/40 hover:text-muted-foreground',
+          'cursor-grab active:cursor-grabbing transition-all duration-150 shrink-0',
+          'opacity-0 group-hover:opacity-100',
+        )}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+
+      {/* Order number */}
+      <span className="font-mono text-base font-bold tabular-nums leading-none w-7 shrink-0 text-accent/50 group-hover:text-accent transition-colors duration-150">
+        {orderNum}
+      </span>
+
+      {/* Divider */}
+      <div className="h-8 w-px bg-border/50 shrink-0" />
+
+      {/* Name + slug */}
+      <div className="flex-1 min-w-0">
+        <p className="font-heading font-semibold text-sm text-foreground truncate leading-snug">
+          {cat.nombre}
+        </p>
+        <p className="font-mono text-[10.5px] text-muted-foreground/60 truncate leading-snug mt-0.5">
+          /{cat.slug}
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-0.5 shrink-0 transition-opacity duration-150 sm:opacity-0 sm:group-hover:opacity-100">
+        <button
+          onClick={onEdit}
+          aria-label="Editar categoría"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button
+          onClick={onDelete}
+          disabled={isDeleting}
+          aria-label="Eliminar categoría"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors disabled:opacity-30"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
   )
 }
+
+// ─── Empty State ───────────────────────────────────────────────────────────────
+
+function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="relative mb-5">
+        <div className="h-16 w-16 rounded-2xl bg-accent/8 border border-accent/10 flex items-center justify-center">
+          <FolderOpen className="h-7 w-7 text-accent/40" />
+        </div>
+        <div className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-background border-2 border-border flex items-center justify-center shadow-sm">
+          <Plus className="h-3 w-3 text-muted-foreground" />
+        </div>
+      </div>
+      <p className="font-heading font-semibold text-foreground text-sm">Sin categorías</p>
+      <p className="text-xs text-muted-foreground mt-1.5 mb-5 max-w-50 leading-relaxed">
+        Crea categorías para organizar el catálogo de productos.
+      </p>
+      <Button size="sm" onClick={onAdd}>
+        <Plus className="h-4 w-4" />
+        Crear primera categoría
+      </Button>
+    </div>
+  )
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 interface CategoryTableProps {
   categories: Category[]
@@ -179,22 +222,18 @@ export function CategoryTable({ categories }: CategoryTableProps) {
     setLocalCats(categories)
   }, [categories])
 
-  // Desktop drag-and-drop monitor (registered once, uses refs for fresh state)
   useEffect(() => {
     return monitorForElements({
       onDrop({ source, location }) {
         const dest = location.current.dropTargets[0]
         if (!dest) return
-
         const srcId = source.data.id as string
         const dstId = dest.data.id as string
         if (srcId === dstId) return
-
         const cats = localCatsRef.current
         const srcIdx = cats.findIndex((c) => c.id === srcId)
         const dstIdx = cats.findIndex((c) => c.id === dstId)
         if (srcIdx === -1 || dstIdx === -1) return
-
         const next = [...cats]
         const [moved] = next.splice(srcIdx, 1)
         next.splice(dstIdx, 0, moved)
@@ -215,7 +254,6 @@ export function CategoryTable({ categories }: CategoryTableProps) {
     if (idx === -1) return
     if (direction === 'up' && idx === 0) return
     if (direction === 'down' && idx === cats.length - 1) return
-
     const next = [...cats]
     const swapIdx = direction === 'up' ? idx - 1 : idx + 1
     ;[next[idx], next[swapIdx]] = [next[swapIdx], next[idx]]
@@ -224,82 +262,116 @@ export function CategoryTable({ categories }: CategoryTableProps) {
 
   async function handleCreate(values: { nombre: string; slug: string }) {
     const nextOrden =
-      localCats.length > 0
-        ? Math.max(...localCats.map((c) => c.orden ?? 0)) + 1
-        : 1
-    await createMutation.mutateAsync({ ...values, orden: nextOrden })
-    setCreating(false)
+      localCats.length > 0 ? Math.max(...localCats.map((c) => c.orden ?? 0)) + 1 : 1
+    try {
+      await createMutation.mutateAsync({ ...values, orden: nextOrden })
+      setCreating(false)
+      sileo.success({ title: 'Categoría creada' })
+    } catch (err) {
+      sileo.error({ title: 'Error al crear', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+    }
   }
 
   async function handleUpdate(values: { nombre: string; slug: string }) {
     if (!editing) return
-    await updateMutation.mutateAsync({ id: editing.id, updates: values })
-    setEditing(null)
+    try {
+      await updateMutation.mutateAsync({ id: editing.id, updates: values })
+      setEditing(null)
+      sileo.success({ title: 'Categoría guardada' })
+    } catch (err) {
+      sileo.error({ title: 'Error al guardar', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+    }
   }
 
   async function confirmDelete() {
     if (!pendingDeleteId) return
-    await deleteMutation.mutateAsync(pendingDeleteId)
-    setPendingDeleteId(null)
+    try {
+      await deleteMutation.mutateAsync(pendingDeleteId)
+      setPendingDeleteId(null)
+      sileo.success({ title: 'Categoría eliminada' })
+    } catch (err) {
+      sileo.error({ title: 'Error al eliminar', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+    }
   }
+
+  const pendingDeleteName = localCats.find((c) => c.id === pendingDeleteId)?.nombre
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 border border-accent/10">
+            <Tag className="h-4 w-4 text-accent" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground leading-none">
+              {localCats.length === 0
+                ? 'Sin categorías'
+                : `${localCats.length} categoría${localCats.length !== 1 ? 's' : ''}`}
+            </p>
+            {localCats.length > 1 && (
+              <p className="text-[10.5px] text-muted-foreground leading-none mt-1">
+                Arrastra para reordenar
+              </p>
+            )}
+          </div>
+        </div>
         <Button onClick={() => setCreating(true)} size="sm">
           <Plus className="h-4 w-4" />
           Nueva categoría
         </Button>
       </div>
 
-      <div className="card-solid rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10"></TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead className="hidden sm:table-cell">Slug</TableHead>
-                <TableHead className="hidden md:table-cell w-20">Orden</TableHead>
-                <TableHead className="w-24"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {localCats.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center text-muted-foreground py-8"
-                  >
-                    Sin categorías. Crea la primera.
-                  </TableCell>
-                </TableRow>
-              )}
-              {localCats.map((cat, idx) => (
-                <DraggableRow
-                  key={cat.id}
-                  cat={cat}
-                  isFirst={idx === 0}
-                  isLast={idx === localCats.length - 1}
-                  onEdit={() => setEditing(cat)}
-                  onDelete={() => setPendingDeleteId(cat.id)}
-                  onMoveUp={() => moveCategory(cat.id, 'up')}
-                  onMoveDown={() => moveCategory(cat.id, 'down')}
-                  isDeleting={deleteMutation.isPending}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      {/* ── Card list ── */}
+      {localCats.length === 0 ? (
+        <EmptyState onAdd={() => setCreating(true)} />
+      ) : (
+        <div className="space-y-2">
+          {localCats.map((cat, idx) => (
+            <CategoryCard
+              key={cat.id}
+              cat={cat}
+              index={idx}
+              total={localCats.length}
+              onEdit={() => setEditing(cat)}
+              onDelete={() => setPendingDeleteId(cat.id)}
+              onMoveUp={() => moveCategory(cat.id, 'up')}
+              onMoveDown={() => moveCategory(cat.id, 'down')}
+              isDeleting={deleteMutation.isPending && deleteMutation.variables === cat.id}
+            />
+          ))}
 
-      {/* Create sheet */}
-      <Sheet open={creating} onOpenChange={setCreating}>
+          {/* Add at bottom */}
+          <button
+            onClick={() => setCreating(true)}
+            className={cn(
+              'w-full flex items-center justify-center gap-2 rounded-xl py-3',
+              'border-2 border-dashed border-border/40 text-sm text-muted-foreground',
+              'hover:border-accent/40 hover:text-accent',
+              'transition-colors duration-150',
+            )}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Añadir categoría
+          </button>
+        </div>
+      )}
+
+      {/* ── Create sheet ── */}
+      <Sheet
+        open={creating}
+        onOpenChange={(open) => {
+          if (!open) createMutation.reset()
+          setCreating(open)
+        }}
+      >
         <SheetContent>
           <SheetHeader>
             <SheetTitle>Nueva categoría</SheetTitle>
             <SheetDescription>
-              Completa los campos para crear una nueva categoría.
+              El slug se genera automáticamente desde el nombre.
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -308,41 +380,57 @@ export function CategoryTable({ categories }: CategoryTableProps) {
               onCancel={() => setCreating(false)}
               isLoading={createMutation.isPending}
             />
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* Delete confirmation */}
-      <ConfirmDialog
-        open={!!pendingDeleteId}
-        onOpenChange={(o) => !o && setPendingDeleteId(null)}
-        title="¿Eliminar categoría?"
-        description="Los productos vinculados quedan sin esta categoría. Esta acción no se puede deshacer."
-        onConfirm={confirmDelete}
-        isLoading={deleteMutation.isPending}
-      />
-
-      {/* Edit sheet */}
-      <Sheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Editar categoría</SheetTitle>
-            <SheetDescription className="font-mono text-xs">
-              {editing?.slug}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            {editing && (
-              <CategoryForm
-                defaultValues={editing}
-                onSubmit={handleUpdate}
-                onCancel={() => setEditing(null)}
-                isLoading={updateMutation.isPending}
-              />
+            {createMutation.isError && (
+              <p className="text-sm text-destructive mt-3">{createMutation.error.message}</p>
             )}
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ── Edit sheet ── */}
+      <Sheet
+        open={!!editing}
+        onOpenChange={(open) => {
+          if (!open) updateMutation.reset()
+          if (!open) setEditing(null)
+        }}
+      >
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Editar categoría</SheetTitle>
+            {editing && (
+              <SheetDescription className="font-mono text-xs">
+                /{editing.slug}
+              </SheetDescription>
+            )}
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {editing && (
+              <>
+                <CategoryForm
+                  defaultValues={editing}
+                  onSubmit={handleUpdate}
+                  onCancel={() => setEditing(null)}
+                  isLoading={updateMutation.isPending}
+                />
+                {updateMutation.isError && (
+                  <p className="text-sm text-destructive mt-3">{updateMutation.error.message}</p>
+                )}
+              </>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Delete confirmation ── */}
+      <ConfirmDialog
+        open={!!pendingDeleteId}
+        onOpenChange={(o) => !o && setPendingDeleteId(null)}
+        title={`¿Eliminar "${pendingDeleteName}"?`}
+        description="Los productos vinculados quedan sin esta categoría. Esta acción no se puede deshacer."
+        onConfirm={confirmDelete}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }

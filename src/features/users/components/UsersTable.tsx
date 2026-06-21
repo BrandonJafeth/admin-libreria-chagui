@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'
 import { z } from 'zod'
 import { Plus, Users, Shield, UserRound, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,7 @@ import { Controller } from 'react-hook-form'
 import { useRouteContext } from '@tanstack/react-router'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useUsers, useCreateUser, useDeleteUser } from '../hooks/useUsers'
+import { sileo } from 'sileo'
 
 const schema = z.object({
   email: z.string().email('Email inválido'),
@@ -46,7 +47,11 @@ export function UsersTable() {
   function handleDeleteConfirm() {
     if (!deletingId) return
     deleteMutation.mutate(deletingId, {
-      onSuccess: () => setDeletingId(null),
+      onSuccess: () => {
+        setDeletingId(null)
+        sileo.success({ title: 'Usuario eliminado' })
+      },
+      onError: (err) => sileo.error({ title: 'Error al eliminar', description: err.message }),
     })
   }
 
@@ -57,14 +62,19 @@ export function UsersTable() {
     reset,
     formState: { errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: standardSchemaResolver(schema),
     defaultValues: { email: '', password: '', role: 'employee' },
   })
 
   async function onSubmit(values: FormValues) {
-    await createMutation.mutateAsync(values)
-    reset()
-    setCreating(false)
+    try {
+      await createMutation.mutateAsync(values)
+      reset()
+      setCreating(false)
+      sileo.success({ title: 'Usuario creado' })
+    } catch (err) {
+      sileo.error({ title: 'Error al crear usuario', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+    }
   }
 
   return (
@@ -144,7 +154,7 @@ export function UsersTable() {
       />
 
       {/* Create sheet */}
-      <Sheet open={creating} onOpenChange={setCreating}>
+      <Sheet open={creating} onOpenChange={(open) => { if (!open) { reset(); createMutation.reset() } setCreating(open) }}>
         <SheetContent className="sm:max-w-sm">
           <SheetHeader>
             <SheetTitle>Nuevo usuario</SheetTitle>

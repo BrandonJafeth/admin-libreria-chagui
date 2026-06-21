@@ -1,5 +1,6 @@
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
+import { Toaster } from 'sileo'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 
 interface RouterContext {
@@ -21,5 +22,22 @@ function Root() {
     )
   }
 
-  return <Outlet />
+  return (
+    <>
+      <Outlet />
+      <Toaster
+          position="top-right"
+          options={{
+            fill: '#ffffff',
+            roundness: 12,
+            styles: {
+              title: 'text-foreground!',
+              description: 'text-muted-foreground!',
+              badge: 'bg-foreground/5!',
+              button: 'bg-foreground/5! hover:bg-foreground/10!',
+            },
+          }}
+        />
+    </>
+  )
 }

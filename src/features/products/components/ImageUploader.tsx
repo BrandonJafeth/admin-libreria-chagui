@@ -9,6 +9,7 @@ import {
   useReorderImages,
 } from '../hooks/useProductMutations'
 import type { ProductImage } from '../api/products.api'
+import { sileo } from 'sileo'
 import { extractDominantColor } from '@/lib/colorExtractor'
 import {
   draggable,
@@ -43,7 +44,6 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
     setLocalImages([...images].sort((a, b) => a.orden - b.orden))
   }, [images])
 
-  // DnD reorder monitor
   useEffect(() => {
     return monitorForElements({
       onDrop({ source, location }) {
@@ -70,6 +70,7 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
     if (!arr.length) return
     setPendingCount((c) => c + arr.length)
     const baseOrden = localImagesRef.current.length
+    let uploaded = 0
 
     await Promise.all(
       arr.map(async (file, i) => {
@@ -79,6 +80,7 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
             orden: baseOrden + i,
             esPrincipal: baseOrden === 0 && i === 0,
           })
+          uploaded++
           extractDominantColor(file)
             .then((hex) =>
               upsertColorMutation.mutate({
@@ -93,6 +95,9 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
         }
       }),
     )
+    if (uploaded > 0) {
+      sileo.success({ title: `${uploaded} imagen${uploaded !== 1 ? 'es' : ''} subida${uploaded !== 1 ? 's' : ''}` })
+    }
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -128,16 +133,21 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
             <DraggableImageCard
               key={img.id}
               image={img}
-              onSetMain={() => setMainMutation.mutate(img.id)}
-              onDelete={() => deleteMutation.mutate({ imageId: img.id, url: img.url })}
+              onSetMain={() => setMainMutation.mutate(img.id, {
+                onSuccess: () => sileo.success({ title: 'Imagen principal actualizada' }),
+                onError: (err) => sileo.error({ title: 'Error', description: err.message }),
+              })}
+              onDelete={() => deleteMutation.mutate({ imageId: img.id, url: img.url }, {
+                onSuccess: () => sileo.success({ title: 'Imagen eliminada' }),
+                onError: (err) => sileo.error({ title: 'Error al eliminar', description: err.message }),
+              })}
               isDeleting={deleteMutation.isPending && (deleteMutation.variables as { imageId: string })?.imageId === img.id}
-              isSettingMain={setMainMutation.isPending}
+              isSettingMain={setMainMutation.isPending && setMainMutation.variables === img.id}
             />
           ))}
         </div>
       )}
 
-      {/* Upload zone */}
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -232,7 +242,7 @@ function DraggableImageCard({
   return (
     <div
       ref={ref}
-      className={`rounded-xl overflow-hidden border flex flex-col transition-all duration-150 ${
+      className={`relative rounded-xl overflow-hidden border transition-all duration-150 ${
         dragging
           ? 'opacity-30 scale-95'
           : isOver
@@ -240,46 +250,49 @@ function DraggableImageCard({
             : 'border-border'
       }`}
     >
+      {/* Image */}
       <div className="relative aspect-square bg-muted overflow-hidden cursor-grab active:cursor-grabbing">
         <img src={image.url} alt={image.alt ?? ''} className="w-full h-full object-cover" />
-
-        {image.es_principal && (
-          <span className="absolute top-1.5 left-1.5 rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-sm">
-            Principal
-          </span>
-        )}
-
-        <div className="absolute top-1.5 right-1.5 rounded-md bg-black/25 p-1 pointer-events-none">
-          <GripVertical className="h-3 w-3 text-white/70" />
-        </div>
       </div>
 
-      <div className="flex items-center border-t border-border/60 bg-card">
+      {/* Drag handle — top right */}
+      <div className="absolute top-2 right-2 z-10 rounded-md bg-black/35 p-1 pointer-events-none backdrop-blur-sm">
+        <GripVertical className="h-3.5 w-3.5 text-white/80" />
+      </div>
+
+      {/* Bottom row: star action + delete */}
+      <div className="absolute bottom-0 inset-x-0 z-10 flex items-center justify-between px-2 py-2">
+        {/* Star / principal button */}
         {image.es_principal ? (
-          <div className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-accent">
-            <Star className="h-3.5 w-3.5" fill="currentColor" />
-            Principal
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-accent shadow-md"
+            title="Imagen principal"
+          >
+            <Star className="h-3.5 w-3.5 text-white" fill="currentColor" />
           </div>
         ) : (
           <button
             onClick={onSetMain}
             disabled={isSettingMain}
             title="Establecer como principal"
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-muted-foreground hover:text-amber-500 hover:bg-amber-50/10 transition-colors disabled:opacity-40"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-amber-400 transition-colors disabled:opacity-40 shadow-md active:scale-95"
           >
-            <Star className="h-3.5 w-3.5" />
-            Principal
+            {isSettingMain
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Star className="h-3.5 w-3.5" />}
           </button>
         )}
-        <div className="w-px h-5 bg-border/60 shrink-0" />
+
+        {/* Delete button */}
         <button
           onClick={onDelete}
           disabled={isDeleting}
           title="Eliminar imagen"
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-destructive hover:bg-destructive/8 transition-colors disabled:opacity-40"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-red-500 transition-colors disabled:opacity-40 shadow-md active:scale-95"
         >
-          {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-          Eliminar
+          {isDeleting
+            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            : <Trash2 className="h-3.5 w-3.5" />}
         </button>
       </div>
     </div>

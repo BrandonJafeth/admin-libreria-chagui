@@ -46,9 +46,11 @@ export async function deleteCategory(id: string): Promise<void> {
 export async function reorderCategories(
   items: { id: string; orden: number }[],
 ): Promise<void> {
-  await Promise.all(
+  const results = await Promise.all(
     items.map(({ id, orden }) =>
       supabase.from('categories').update({ orden }).eq('id', id),
     ),
   )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw failed.error
 }

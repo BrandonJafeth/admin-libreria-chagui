@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ProductForm, type ProductFormValues } from '@/features/products/components/ProductForm'
 import { useCreateProduct } from '@/features/products/hooks/useProductMutations'
+import { sileo } from 'sileo'
+import { td } from '@/lib/td'
 
 export const Route = createFileRoute('/_authenticated/productos/nuevo')({
   staticData: { breadcrumb: 'Nuevo producto' },
@@ -10,24 +13,34 @@ export const Route = createFileRoute('/_authenticated/productos/nuevo')({
 function NuevoProductoPage() {
   const navigate = useNavigate()
   const createMutation = useCreateProduct()
+  const [apiError, setApiError] = useState<string | undefined>()
 
   async function handleSubmit(values: ProductFormValues) {
+    setApiError(undefined)
     const { category_ids, ...product } = values
-    const created = await createMutation.mutateAsync({
-      product: {
-        nombre: product.nombre,
-        slug: product.slug,
-        precio: product.precio,
-        descripcion: product.descripcion,
-        estado: product.estado,
-        destacado: product.destacado,
-      },
-      categoryIds: category_ids,
-    })
-    await navigate({
-      to: '/productos/$productId',
-      params: { productId: created.id },
-    })
+    try {
+      const created = await createMutation.mutateAsync({
+        product: {
+          nombre: product.nombre,
+          slug: product.slug,
+          precio: product.precio,
+          descripcion: product.descripcion,
+          estado: product.estado,
+          destacado: product.destacado,
+        },
+        categoryIds: category_ids,
+      })
+      sileo.success({
+        title: 'Producto creado',
+        description: td('**Siguiente paso:** sube imágenes y configura colores.\n- Imágenes desde la pestaña de fotos\n- Colores desde la paleta'),
+      })
+      await navigate({
+        to: '/productos/$productId',
+        params: { productId: created.id },
+      })
+    } catch (err) {
+      setApiError(err instanceof Error ? err.message : 'Error desconocido. Intenta de nuevo.')
+    }
   }
 
   return (
@@ -40,12 +53,8 @@ function NuevoProductoPage() {
           onSubmit={handleSubmit}
           isLoading={createMutation.isPending}
           submitLabel="Crear producto"
+          apiError={apiError}
         />
-        {createMutation.isError && (
-          <p className="text-sm text-destructive mt-3">
-            {createMutation.error.message}
-          </p>
-        )}
       </div>
     </div>
   )

@@ -40,8 +40,9 @@ export async function createUser(
 }
 
 export async function deleteUser(userId: string): Promise<void> {
-  const { error } = await supabase.functions.invoke('delete-user', {
+  const { data, error } = await supabase.functions.invoke('delete-user', {
     body: { user_id: userId },
   })
   if (error) throw new Error(error.message)
+  if (data && !data.success) throw new Error(data.error ?? 'Error al eliminar usuario')
 }

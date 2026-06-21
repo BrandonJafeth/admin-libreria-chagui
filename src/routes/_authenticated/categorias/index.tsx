@@ -14,14 +14,27 @@ function CategoriasPage() {
     return <p className="text-destructive text-sm">Error: {error.message}</p>
   }
 
-  return (
-    <div className="space-y-4">
-      <h1 className="font-heading text-2xl font-semibold text-foreground">Categorías</h1>
-      {isLoading ? (
-        <p className="text-muted-foreground text-sm">Cargando…</p>
-      ) : (
-        <CategoryTable categories={categories ?? []} />
-      )}
-    </div>
-  )
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-muted animate-pulse" />
+            <div className="space-y-1.5">
+              <div className="h-3.5 w-24 rounded bg-muted animate-pulse" />
+              <div className="h-2.5 w-32 rounded bg-muted animate-pulse" />
+            </div>
+          </div>
+          <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-15 rounded-xl bg-muted animate-pulse" style={{ opacity: 1 - i * 0.15 }} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return <CategoryTable categories={categories ?? []} />
 }

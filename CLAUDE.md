@@ -60,6 +60,33 @@ Tailwind CSS v4. No `tailwind.config.js` — theme is configured via `@theme` in
 - `.liquid-glass` / `.liquid-glass-strong` → frosted glass surfaces
 - `.cuaderno-bg` → signature grid texture
 
+## Form Validation
+
+**Stack:** react-hook-form v7 + Zod v4 + `@hookform/resolvers` v5.
+
+**Critical — use `standardSchemaResolver`, NOT `zodResolver`:**
+
+```ts
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'
+
+useForm({ resolver: standardSchemaResolver(schema) })
+```
+
+**Why not `zodResolver`:** Vite bundles `zod` (app import) and `zod/v4/core` (resolver internal import) as separate modules. The `zodResolver` from `/zod` path uses `error instanceof z4.$ZodError` to detect Zod v4 errors — this fails across module boundaries even though it's the same class. Result: ZodError thrown as unhandled promise rejection, no field errors shown in UI. `standardSchemaResolver` avoids this entirely — it calls `schema['~standard'].validate()` (Standard Schema protocol, which Zod v4 implements natively), no `instanceof` check needed.
+
+**Forms that use this pattern:** `ProductForm`, `CategoryForm`, `UsersTable`.
+
+**Zod schema notes:**
+- Use `z.coerce.number({ error: 'message' })` for number inputs (v4 syntax; v3 used `invalid_type_error`)
+- Error messages go in `.min(1, 'msg')` / `.max(n, 'msg')` as usual
+- `category_ids: z.array(z.string()).min(1, 'msg')` for multi-select chip fields
+
+**ProductForm specifics:**
+- `mode: 'onBlur'` — validates on blur before first submit, re-validates on change after first failed submit
+- `handleInvalid` sets `validationFailed: true` → shows red banner at top
+- `FieldError` component renders `<AlertCircle>` + message below each field
+- `category_ids` uses `setValue('category_ids', next, { shouldValidate: true })` so chip toggles trigger validation immediately after first submit attempt
+
 ## Environment Variables
 
 Required in `.env` (see `.env.example`):

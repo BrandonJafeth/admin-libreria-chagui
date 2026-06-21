@@ -1,11 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'
 import { z } from 'zod'
+import { AlertCircle, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { RichEditor } from '@/components/ui/rich-editor'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -18,15 +19,35 @@ import { generateSlug } from '@/lib/utils'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import type { Product } from '../api/products.api'
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null
+  return (
+    <p className="flex items-center gap-1.5 text-xs font-medium text-destructive" role="alert">
+      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+      {message}
+    </p>
+  )
+}
+
+const NOMBRE_MAX = 120
+const SLUG_MAX = 120
+const DESC_VISIBLE_MAX = 800
+const PRECIO_MAX = 9_999_999
+
 const schema = z.object({
-  nombre: z.string().min(1, 'Nombre requerido'),
+  nombre: z
+    .string()
+    .min(1, 'Nombre requerido')
+    .max(NOMBRE_MAX, `Máximo ${NOMBRE_MAX} caracteres`),
   slug: z
     .string()
     .min(1, 'Slug requerido')
+    .max(SLUG_MAX, `Máximo ${SLUG_MAX} caracteres`)
     .regex(/^[a-z0-9-]+$/, 'Solo minúsculas, números y guiones'),
   precio: z.coerce
     .number({ error: 'Ingresa un precio válido' })
-    .min(0, 'El precio no puede ser negativo'),
+    .min(1, 'El precio debe ser mayor a 0')
+    .max(PRECIO_MAX, `Precio máximo: ₡${PRECIO_MAX.toLocaleString('es-CR')}`),
   descripcion: z.string().default(''),
   estado: z.enum(['disponible', 'agotado']),
   destacado: z.boolean().default(false),
@@ -41,6 +62,7 @@ interface ProductFormProps {
   onCancel?: () => void
   isLoading?: boolean
   submitLabel?: string
+  apiError?: string
 }
 
 export function ProductForm({
@@ -49,8 +71,10 @@ export function ProductForm({
   onCancel,
   isLoading,
   submitLabel = 'Guardar',
+  apiError,
 }: ProductFormProps) {
   const { data: categories } = useCategories()
+  const [validationFailed, setValidationFailed] = useState(false)
 
   const {
     register,
@@ -60,7 +84,8 @@ export function ProductForm({
     control,
     formState: { errors },
   } = useForm<ProductFormValues>({
-    resolver: zodResolver(schema),
+    resolver: standardSchemaResolver(schema),
+    mode: 'onBlur',
     defaultValues: {
       nombre: defaultValues?.nombre ?? '',
       slug: defaultValues?.slug ?? '',
@@ -75,7 +100,6 @@ export function ProductForm({
   const nombre = watch('nombre')
   const categoryIds = watch('category_ids')
 
-  // Auto-generate slug from nombre only in create mode
   useEffect(() => {
     if (!defaultValues?.slug) {
       setValue('slug', generateSlug(nombre))
@@ -89,20 +113,62 @@ export function ProductForm({
     setValue('category_ids', next, { shouldValidate: true })
   }
 
+  async function handleValid(values: ProductFormValues) {
+    setValidationFailed(false)
+    await onSubmit(values)
+  }
+
+  function handleInvalid() {
+    setValidationFailed(true)
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit(handleValid, handleInvalid)} className="flex flex-col gap-5">
+
+      {/* Banner validación — aparece garantizado cuando RHF llama onInvalid */}
+      {validationFailed && (
+        <div
+          className="flex items-start gap-3 rounded-lg border-2 border-destructive bg-destructive/10 px-4 py-3"
+          role="alert"
+        >
+          <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold text-destructive">Revisa el formulario</p>
+            <p className="text-xs text-destructive mt-0.5">Corrige los campos marcados en rojo para continuar.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Banner error API */}
+      {apiError && (
+        <div
+          className="flex items-start gap-3 rounded-lg border-2 border-destructive bg-destructive/10 px-4 py-3"
+          role="alert"
+        >
+          <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold text-destructive">No se pudo guardar</p>
+            <p className="text-xs text-destructive mt-0.5">{apiError}</p>
+          </div>
+        </div>
+      )}
+
       {/* Nombre */}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="nombre">Nombre</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="nombre">Nombre</Label>
+          <span className={`text-[11px] tabular-nums ${(nombre?.length ?? 0) > NOMBRE_MAX * 0.9 ? 'text-destructive' : 'text-muted-foreground'}`}>
+            {nombre?.length ?? 0}/{NOMBRE_MAX}
+          </span>
+        </div>
         <Input
           id="nombre"
           {...register('nombre')}
           placeholder="Lapicero azul x3"
+          maxLength={NOMBRE_MAX}
           aria-invalid={!!errors.nombre}
         />
-        {errors.nombre && (
-          <p className="text-xs text-destructive">{errors.nombre.message}</p>
-        )}
+        <FieldError message={errors.nombre?.message} />
       </div>
 
       {/* Slug */}
@@ -112,11 +178,10 @@ export function ProductForm({
           id="slug"
           {...register('slug')}
           placeholder="lapicero-azul-x3"
+          maxLength={SLUG_MAX}
           aria-invalid={!!errors.slug}
         />
-        {errors.slug && (
-          <p className="text-xs text-destructive">{errors.slug.message}</p>
-        )}
+        <FieldError message={errors.slug?.message} />
       </div>
 
       {/* Precio */}
@@ -125,26 +190,34 @@ export function ProductForm({
         <Input
           id="precio"
           type="number"
-          min={0}
+          min={1}
+          max={PRECIO_MAX}
           {...register('precio')}
           onFocus={(e) => e.target.select()}
           className="max-w-48"
           aria-invalid={!!errors.precio}
         />
-        {errors.precio && (
-          <p className="text-xs text-destructive">{errors.precio.message}</p>
-        )}
+        <FieldError message={errors.precio?.message} />
       </div>
 
       {/* Descripción */}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="descripcion">Descripción</Label>
-        <Textarea
-          id="descripcion"
-          {...register('descripcion')}
-          placeholder="Descripción opcional del producto…"
-          rows={3}
+        <Controller
+          name="descripcion"
+          control={control}
+          render={({ field }) => (
+            <RichEditor
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              placeholder="Descripción opcional del producto…"
+              visibleMax={DESC_VISIBLE_MAX}
+              aria-invalid={!!errors.descripcion}
+            />
+          )}
         />
+        <FieldError message={errors.descripcion?.message} />
       </div>
 
       {/* Estado */}
@@ -192,7 +265,7 @@ export function ProductForm({
           <div
             className={`flex flex-wrap gap-2 rounded-lg p-2 transition-colors ${
               errors.category_ids
-                ? 'ring-1 ring-destructive/60 bg-destructive/5'
+                ? 'ring-2 ring-destructive bg-destructive/5'
                 : 'ring-0'
             }`}
           >
@@ -214,9 +287,7 @@ export function ProductForm({
               )
             })}
           </div>
-          {errors.category_ids && (
-            <p className="text-xs text-destructive">Selecciona al menos una categoría</p>
-          )}
+          <FieldError message={errors.category_ids ? 'Selecciona al menos una categoría' : undefined} />
         </div>
       )}
 
