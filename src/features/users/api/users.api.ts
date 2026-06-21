@@ -1,4 +1,17 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
+
+async function extractFunctionError(error: unknown): Promise<string> {
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const body = await error.context.json() as { error?: string }
+      if (body?.error) return body.error
+    } catch {
+      // json parse failed, fall through
+    }
+  }
+  return (error as Error).message
+}
 
 export interface UserProfile {
   id: string
@@ -35,7 +48,7 @@ export async function createUser(
   const { data, error } = await supabase.functions.invoke('create-user', {
     body: { email, password, role },
   })
-  if (error) throw new Error(error.message)
+  if (error) throw new Error(await extractFunctionError(error))
   if (data && !data.success) throw new Error(data.error ?? 'Error al crear usuario')
 }
 
@@ -43,6 +56,6 @@ export async function deleteUser(userId: string): Promise<void> {
   const { data, error } = await supabase.functions.invoke('delete-user', {
     body: { user_id: userId },
   })
-  if (error) throw new Error(error.message)
+  if (error) throw new Error(await extractFunctionError(error))
   if (data && !data.success) throw new Error(data.error ?? 'Error al eliminar usuario')
 }

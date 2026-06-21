@@ -175,7 +175,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { error: profileError } = await supabaseAdmin.from('profiles').insert({
+    // Upsert handles case where a DB trigger already created the row on auth.users insert
+    const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
       id: newUser.user.id,
       email,
       role,
