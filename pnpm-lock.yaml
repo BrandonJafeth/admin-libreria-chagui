@@ -71,6 +71,9 @@ importers:
       react-hook-form:
         specifier: ^7.57.0
         version: 7.79.0(react@19.2.7)
+      react-image-crop:
+        specifier: ^11.0.10
+        version: 11.0.10(react@19.2.7)
       sileo:
         specifier: ^0.1.5
         version: 0.1.5(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1797,6 +1800,11 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
+
+  react-image-crop@11.0.10:
+    resolution: {integrity: sha512-+5FfDXUgYLLqBh1Y/uQhIycpHCbXkI50a+nbfkB1C0xXXUTwkisHDo2QCB1SQJyHCqIuia4FeyReqXuMDKWQTQ==}
+    peerDependencies:
+      react: '>=16.13.1'
 
   react-remove-scroll-bar@2.3.8:
     resolution: {integrity: sha512-9r+yi9+mgU33AKcj6IbT9oRCO78WriSj6t/cF8DWBZJ9aOGPOTEDvdUDz1FwKim7QXWwmHqtdHnRJfhAxEG46Q==}
@@ -3764,6 +3772,10 @@ snapshots:
       scheduler: 0.27.0
 
   react-hook-form@7.79.0(react@19.2.7):
+    dependencies:
+      react: 19.2.7
+
+  react-image-crop@11.0.10(react@19.2.7):
     dependencies:
       react: 19.2.7
 

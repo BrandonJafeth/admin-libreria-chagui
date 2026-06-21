@@ -16,6 +16,7 @@ import {
   dropTargetForElements,
   monitorForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { CropModal } from './CropModal'
 
 interface ImageUploaderProps {
   productId: string
@@ -28,6 +29,8 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
   const [localImages, setLocalImages] = useState<ProductImage[]>([])
   const [pendingCount, setPendingCount] = useState(0)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [cropQueue, setCropQueue] = useState<File[]>([])
+  const [cropTotal, setCropTotal] = useState(0)
 
   const uploadMutation = useUploadProductImage(productId)
   const deleteMutation = useDeleteProductImage(productId)
@@ -100,9 +103,40 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
     }
   }
 
+  function startCropQueue(files: FileList | File[]) {
+    const arr = Array.from(files).filter((f) => f.type.startsWith('image/'))
+    if (!arr.length) return
+    setCropTotal(arr.length)
+    setCropQueue(arr)
+  }
+
+  async function handleCropConfirm(croppedFile: File) {
+    try {
+      await uploadFiles([croppedFile])
+    } catch {
+      sileo.error({ title: 'Error al subir imagen', description: 'No se pudo subir. Intenta de nuevo.' })
+    } finally {
+      setCropQueue((q) => q.slice(1))
+    }
+  }
+
+  async function handleCropSkip(originalFile: File) {
+    try {
+      await uploadFiles([originalFile])
+    } catch {
+      sileo.error({ title: 'Error al subir imagen', description: 'No se pudo subir. Intenta de nuevo.' })
+    } finally {
+      setCropQueue((q) => q.slice(1))
+    }
+  }
+
+  function handleCropCancel() {
+    setCropQueue([])
+  }
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files?.length) {
-      uploadFiles(e.target.files)
+      startCropQueue(e.target.files)
       e.target.value = ''
     }
   }
@@ -120,7 +154,7 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
   function handleDrop(e: React.DragEvent) {
     e.preventDefault()
     setIsDragOver(false)
-    if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files)
+    if (e.dataTransfer.files.length) startCropQueue(e.dataTransfer.files)
   }
 
   return (
@@ -191,6 +225,19 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
         <p className="text-xs text-muted-foreground">
           La primera imagen subida será la principal automáticamente.
         </p>
+      )}
+
+      {cropQueue.length > 0 && (
+        <CropModal
+          key={cropTotal - cropQueue.length}
+          file={cropQueue[0]}
+          current={cropTotal - cropQueue.length + 1}
+          total={cropTotal}
+          isUploading={pendingCount > 0}
+          onConfirm={handleCropConfirm}
+          onSkip={handleCropSkip}
+          onCancel={handleCropCancel}
+        />
       )}
     </div>
   )

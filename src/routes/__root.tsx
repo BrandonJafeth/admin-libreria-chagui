@@ -2,6 +2,7 @@ import { createRootRouteWithContext, Outlet } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 import { Toaster } from 'sileo'
 import { useAuth } from '@/features/auth/hooks/useAuth'
+import { NotFoundPage } from '@/components/ui/not-found'
 
 interface RouterContext {
   queryClient: QueryClient
@@ -9,6 +10,7 @@ interface RouterContext {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: Root,
+  notFoundComponent: NotFoundPage,
 })
 
 function Root() {

@@ -1,9 +1,9 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, notFound } from '@tanstack/react-router'
 import { UsersTable } from '@/features/users/components/UsersTable'
 
 export const Route = createFileRoute('/_authenticated/usuarios/')({
   beforeLoad: async ({ context }) => {
-    if (context.userRole !== 'admin') throw redirect({ to: '/' })
+    if (context.userRole !== 'admin') throw notFound()
   },
   component: UsuariosPage,
   staticData: { breadcrumb: 'Usuarios' },

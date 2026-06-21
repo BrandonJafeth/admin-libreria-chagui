@@ -111,7 +111,8 @@ export async function updateProduct(
   if (error) throw error
 
   // Replace categories: delete all → insert new
-  await supabase.from('product_categories').delete().eq('product_id', id)
+  const { error: delErr } = await supabase.from('product_categories').delete().eq('product_id', id)
+  if (delErr) throw delErr
   if (categoryIds.length > 0) {
     const { error: catErr } = await supabase
       .from('product_categories')

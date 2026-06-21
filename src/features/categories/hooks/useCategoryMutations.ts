@@ -37,11 +37,7 @@ export function useDeleteCategory() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteCategory(id),
-    onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: CATEGORIES_KEY })
-      qc.setQueryData<Category[]>(CATEGORIES_KEY, (old) => old?.filter((c) => c.id !== id))
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: CATEGORIES_KEY }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CATEGORIES_KEY }),
   })
 }
 

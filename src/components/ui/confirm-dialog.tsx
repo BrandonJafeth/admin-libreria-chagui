@@ -14,6 +14,7 @@ interface ConfirmDialogProps {
   title: string
   description?: string
   confirmLabel?: string
+  confirmDisabled?: boolean
   onConfirm: () => void
   isLoading?: boolean
 }
@@ -24,6 +25,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = 'Eliminar',
+  confirmDisabled,
   onConfirm,
   isLoading,
 }: ConfirmDialogProps) {
@@ -45,7 +47,7 @@ export function ConfirmDialog({
           <Button
             variant="destructive"
             onClick={onConfirm}
-            disabled={isLoading}
+            disabled={isLoading || confirmDisabled}
           >
             {isLoading ? 'Eliminando…' : confirmLabel}
           </Button>

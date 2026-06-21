@@ -21,7 +21,7 @@ import {
   useDeleteCategory,
   useReorderCategories,
 } from '../hooks/useCategoryMutations'
-import type { Category } from '../api/categories.api'
+import { fetchCategoryProductCount, type Category } from '../api/categories.api'
 import { sileo } from 'sileo'
 import { cn } from '@/lib/utils'
 
@@ -207,6 +207,8 @@ export function CategoryTable({ categories }: CategoryTableProps) {
   const [editing, setEditing] = useState<Category | null>(null)
   const [creating, setCreating] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [linkedCount, setLinkedCount] = useState<number | null>(null)
+  const [checkingLinks, setCheckingLinks] = useState(false)
 
   const localCatsRef = useRef(localCats)
   localCatsRef.current = localCats
@@ -283,11 +285,32 @@ export function CategoryTable({ categories }: CategoryTableProps) {
     }
   }
 
+  async function handleDeleteClick(id: string) {
+    setPendingDeleteId(id)
+    setLinkedCount(null)
+    setCheckingLinks(true)
+    try {
+      const count = await fetchCategoryProductCount(id)
+      setLinkedCount(count)
+    } catch {
+      setLinkedCount(0)
+    } finally {
+      setCheckingLinks(false)
+    }
+  }
+
+  function handleDeleteDialogClose() {
+    setPendingDeleteId(null)
+    setLinkedCount(null)
+    deleteMutation.reset()
+  }
+
   async function confirmDelete() {
     if (!pendingDeleteId) return
     try {
       await deleteMutation.mutateAsync(pendingDeleteId)
       setPendingDeleteId(null)
+      setLinkedCount(null)
       sileo.success({ title: 'Categoría eliminada' })
     } catch (err) {
       sileo.error({ title: 'Error al eliminar', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
@@ -295,6 +318,7 @@ export function CategoryTable({ categories }: CategoryTableProps) {
   }
 
   const pendingDeleteName = localCats.find((c) => c.id === pendingDeleteId)?.nombre
+  const isBlocked = linkedCount !== null && linkedCount > 0
 
   return (
     <div className="space-y-4">
@@ -336,7 +360,7 @@ export function CategoryTable({ categories }: CategoryTableProps) {
               index={idx}
               total={localCats.length}
               onEdit={() => setEditing(cat)}
-              onDelete={() => setPendingDeleteId(cat.id)}
+              onDelete={() => handleDeleteClick(cat.id)}
               onMoveUp={() => moveCategory(cat.id, 'up')}
               onMoveDown={() => moveCategory(cat.id, 'down')}
               isDeleting={deleteMutation.isPending && deleteMutation.variables === cat.id}
@@ -425,9 +449,20 @@ export function CategoryTable({ categories }: CategoryTableProps) {
       {/* ── Delete confirmation ── */}
       <ConfirmDialog
         open={!!pendingDeleteId}
-        onOpenChange={(o) => !o && setPendingDeleteId(null)}
-        title={`¿Eliminar "${pendingDeleteName}"?`}
-        description="Los productos vinculados quedan sin esta categoría. Esta acción no se puede deshacer."
+        onOpenChange={(o) => !o && handleDeleteDialogClose()}
+        title={
+          isBlocked
+            ? `No se puede eliminar "${pendingDeleteName}"`
+            : `¿Eliminar "${pendingDeleteName}"?`
+        }
+        description={
+          checkingLinks
+            ? 'Verificando productos vinculados…'
+            : isBlocked
+              ? `Esta categoría está vinculada a ${linkedCount} producto${linkedCount !== 1 ? 's' : ''}. Desvincula los productos de esta categoría antes de eliminarla.`
+              : 'Esta acción no se puede deshacer.'
+        }
+        confirmDisabled={checkingLinks || isBlocked}
         onConfirm={confirmDelete}
         isLoading={deleteMutation.isPending}
       />

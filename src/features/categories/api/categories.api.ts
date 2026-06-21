@@ -38,6 +38,15 @@ export async function updateCategory(
   return data
 }
 
+export async function fetchCategoryProductCount(categoryId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('product_categories')
+    .select('*', { count: 'exact', head: true })
+    .eq('category_id', categoryId)
+  if (error) throw error
+  return count ?? 0
+}
+
 export async function deleteCategory(id: string): Promise<void> {
   const { error } = await supabase.from('categories').delete().eq('id', id)
   if (error) throw error
