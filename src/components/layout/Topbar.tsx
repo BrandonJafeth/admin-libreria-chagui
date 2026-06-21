@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link, useMatches } from '@tanstack/react-router'
-import { ChevronRight, LogOut, Menu } from 'lucide-react'
+import { ChevronRight, KeyRound, LogOut, Menu } from 'lucide-react'
 import { useAuth } from '@/features/auth/hooks/useAuth'
 import {
   DropdownMenu,
@@ -10,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useUIStore } from '@/store/ui-store'
 import { cn } from '@/lib/utils'
+import { ChangePasswordSheet } from '@/features/auth/components/ChangePasswordSheet'
 
 declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
@@ -21,6 +23,7 @@ export function Topbar() {
   const { user, signOut } = useAuth()
   const { sidebarCollapsed, sidebarMobileOpen, setSidebarMobileOpen } = useUIStore()
   const matches = useMatches()
+  const [changingPassword, setChangingPassword] = useState(false)
 
   const crumbs = matches
     .filter((m) => m.staticData.breadcrumb)
@@ -94,6 +97,14 @@ export function Topbar() {
             </>
           )}
           <DropdownMenuItem
+            onClick={() => setChangingPassword(true)}
+            className="gap-2 text-[12px]"
+          >
+            <KeyRound className="h-3.5 w-3.5" />
+            Cambiar contraseña
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
             onClick={() => signOut()}
             className="text-destructive focus:text-destructive gap-2 text-[12px]"
           >
@@ -102,6 +113,8 @@ export function Topbar() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ChangePasswordSheet open={changingPassword} onOpenChange={setChangingPassword} />
     </header>
   )
 }
