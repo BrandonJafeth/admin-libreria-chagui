@@ -6,6 +6,7 @@ import { Plus, Users, Shield, UserRound, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import { PasswordInput } from '@/components/ui/password-input'
 import { useAuthStore } from '@/features/auth/store/auth-store'
 import { Badge } from '@/components/ui/badge'
@@ -40,7 +41,7 @@ type FormValues = z.infer<typeof schema>
 export function UsersTable() {
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const { data: users, isLoading } = useUsers()
+  const { data: users, isLoading, error } = useUsers()
   const { userRole } = useRouteContext({ from: '/_authenticated' })
   const isAdmin = userRole === 'admin'
   const currentUserId = useAuthStore((s) => s.user?.id)
@@ -95,13 +96,18 @@ export function UsersTable() {
       {isLoading && (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />
+            <Skeleton key={i} className="h-14 rounded-xl" />
           ))}
         </div>
       )}
 
+      {/* Error */}
+      {!isLoading && error && (
+        <p className="text-sm text-destructive">Error cargando usuarios: {error.message}</p>
+      )}
+
       {/* Empty */}
-      {!isLoading && (!users || users.length === 0) && (
+      {!isLoading && !error && (!users || users.length === 0) && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Users className="h-10 w-10 text-muted-foreground/30 mb-3" />
           <p className="text-muted-foreground text-sm font-medium">Sin usuarios</p>

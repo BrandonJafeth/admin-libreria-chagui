@@ -43,6 +43,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 import { ProductForm, type ProductFormValues } from './ProductForm'
 import { ImageUploader } from './ImageUploader'
 import { ColorPicker } from './ColorPicker'
@@ -433,15 +434,15 @@ export function ProductTable() {
       {isLoading && viewMode === 'grid' && (
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="rounded-xl bg-muted animate-pulse aspect-3/4" />
+            <Skeleton key={i} className="rounded-xl aspect-3/4" />
           ))}
         </div>
       )}
       {isLoading && viewMode === 'table' && (
-        <div className="card-solid rounded-xl overflow-hidden animate-pulse">
-          <div className="h-10 bg-muted/60" />
+        <div className="card-solid rounded-xl overflow-hidden">
+          <Skeleton className="h-10 rounded-none" />
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-14 border-t border-border bg-muted/20" />
+            <Skeleton key={i} className="h-14 rounded-none border-t border-border mt-0" />
           ))}
         </div>
       )}
@@ -749,7 +750,7 @@ interface ProductEditSheetProps {
 }
 
 function ProductEditSheet({ productId, open, onOpenChange }: ProductEditSheetProps) {
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, error } = useQuery({
     queryKey: productQueryKey(productId),
     queryFn: () => fetchProduct(productId),
     enabled: open && !!productId,
@@ -779,11 +780,13 @@ function ProductEditSheet({ productId, open, onOpenChange }: ProductEditSheetPro
 
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
           {isLoading ? (
-            <div className="space-y-3 animate-pulse">
+            <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-9 bg-muted rounded" />
+                <Skeleton key={i} className="h-9 w-full" />
               ))}
             </div>
+          ) : error ? (
+            <p className="text-sm text-destructive">Error cargando producto: {error.message}</p>
           ) : product ? (
             <>
               <section>

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { CategoryTable } from '@/features/categories/components/CategoryTable'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/_authenticated/categorias/')({
   staticData: { breadcrumb: 'Categorías' },
@@ -19,17 +20,17 @@ function CategoriasPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-muted animate-pulse" />
+            <Skeleton className="h-9 w-9 rounded-xl" />
             <div className="space-y-1.5">
-              <div className="h-3.5 w-24 rounded bg-muted animate-pulse" />
-              <div className="h-2.5 w-32 rounded bg-muted animate-pulse" />
+              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className="h-2.5 w-32" />
             </div>
           </div>
-          <div className="h-8 w-32 rounded-lg bg-muted animate-pulse" />
+          <Skeleton className="h-8 w-32 rounded-lg" />
         </div>
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-15 rounded-xl bg-muted animate-pulse" style={{ opacity: 1 - i * 0.15 }} />
+            <Skeleton key={i} className="h-15 rounded-xl" style={{ opacity: 1 - i * 0.15 }} />
           ))}
         </div>
       </div>

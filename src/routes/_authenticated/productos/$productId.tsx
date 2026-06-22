@@ -9,6 +9,7 @@ import { sileo } from 'sileo'
 import { ImageUploader } from '@/features/products/components/ImageUploader'
 import { ColorPicker } from '@/features/products/components/ColorPicker'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/_authenticated/productos/$productId')({
   staticData: { breadcrumb: 'Editar producto' },
@@ -18,6 +19,7 @@ export const Route = createFileRoute('/_authenticated/productos/$productId')({
       queryFn: () => fetchProduct(productId),
     })
   },
+  pendingMs: 0,
   pendingComponent: ProductSkeleton,
   errorComponent: ProductError,
   component: () => (
@@ -94,11 +96,11 @@ function ProductDetailPage() {
 
 function ProductSkeleton() {
   return (
-    <div className="max-w-2xl space-y-4 animate-pulse">
-      <div className="h-8 bg-muted rounded w-48" />
+    <div className="max-w-2xl space-y-4">
+      <Skeleton className="h-8 w-48" />
       <div className="card-solid rounded-xl p-6 space-y-3">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-9 bg-muted rounded" />
+          <Skeleton key={i} className="h-9 w-full" />
         ))}
       </div>
     </div>
