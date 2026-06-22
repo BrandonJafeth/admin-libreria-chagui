@@ -8,9 +8,15 @@ import ReactCrop, {
 import 'react-image-crop/dist/ReactCrop.css'
 import { Button } from '@/components/ui/button'
 import { Crop as CropIcon, RotateCcw, RotateCw, Loader2 } from 'lucide-react'
+import { sileo } from 'sileo'
 
 // Large images cause sluggish crop interaction — downsample to this before display
 const MAX_DISPLAY_PX = 1400
+
+// Preserve PNG format (keeps transparency); convert everything else to JPEG
+function outputMime(file: File): 'image/png' | 'image/jpeg' {
+  return file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+}
 
 interface CropModalProps {
   file: File
@@ -111,12 +117,14 @@ export function CropModal({
     setIsRotating(true)
     try {
       const degrees = dir === 'cw' ? 90 : -90
-      const blob = await rotateImageBlob(img, degrees)
+      const blob = await rotateImageBlob(img, degrees, outputMime(file))
       const newUrl = URL.createObjectURL(blob)
       rotatedUrlsRef.current.push(newUrl)
       setDisplayUrl(newUrl)
       setCrop(undefined)
       setCompletedCrop(undefined)
+    } catch {
+      sileo.error({ title: 'Error al rotar imagen', description: 'Intenta de nuevo.' })
     } finally {
       setIsRotating(false)
     }
@@ -124,8 +132,13 @@ export function CropModal({
 
   async function handleConfirm() {
     if (!imgRef.current || !completedCrop) return
-    const blob = await getCroppedBlob(imgRef.current, completedCrop)
-    onConfirm(new File([blob], file.name, { type: 'image/jpeg' }))
+    try {
+      const mime = outputMime(file)
+      const blob = await getCroppedBlob(imgRef.current, completedCrop, mime)
+      onConfirm(new File([blob], file.name, { type: mime }))
+    } catch {
+      sileo.error({ title: 'Error al recortar imagen', description: 'Intenta de nuevo.' })
+    }
   }
 
   const busy = isUploading || isRotating
@@ -223,7 +236,11 @@ export function CropModal({
   )
 }
 
-async function rotateImageBlob(image: HTMLImageElement, degrees: number): Promise<Blob> {
+async function rotateImageBlob(
+  image: HTMLImageElement,
+  degrees: number,
+  mime: 'image/png' | 'image/jpeg',
+): Promise<Blob> {
   const rad = (degrees * Math.PI) / 180
   const w = image.naturalWidth
   const h = image.naturalHeight
@@ -237,13 +254,17 @@ async function rotateImageBlob(image: HTMLImageElement, degrees: number): Promis
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('Canvas vacío'))),
-      'image/jpeg',
-      0.92,
+      mime,
+      mime === 'image/jpeg' ? 0.92 : undefined,
     )
   })
 }
 
-async function getCroppedBlob(image: HTMLImageElement, crop: PixelCrop): Promise<Blob> {
+async function getCroppedBlob(
+  image: HTMLImageElement,
+  crop: PixelCrop,
+  mime: 'image/png' | 'image/jpeg',
+): Promise<Blob> {
   const scaleX = image.naturalWidth / image.width
   const scaleY = image.naturalHeight / image.height
   const canvas = document.createElement('canvas')
@@ -264,8 +285,8 @@ async function getCroppedBlob(image: HTMLImageElement, crop: PixelCrop): Promise
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error('Canvas vacío'))),
-      'image/jpeg',
-      0.92,
+      mime,
+      mime === 'image/jpeg' ? 0.92 : undefined,
     )
   })
 }
