@@ -123,6 +123,36 @@ export interface Database {
         }
         Relationships: []
       }
+      product_reviews: {
+        Row: {
+          id: string
+          product_id: string
+          author_name: string
+          rating: number
+          comment: string | null
+          approved: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          author_name: string
+          rating: number
+          comment?: string | null
+          approved?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          author_name?: string
+          rating?: number
+          comment?: string | null
+          approved?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string

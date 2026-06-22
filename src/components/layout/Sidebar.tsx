@@ -4,6 +4,7 @@ import {
   Package,
   Tag,
   Users,
+  MessageSquare,
   ChevronLeft,
   ChevronRight,
   X,
@@ -26,6 +27,7 @@ const baseNavGroups = [
     items: [
       { to: '/productos' as const, icon: Package, label: 'Productos', exact: false },
       { to: '/categorias' as const, icon: Tag, label: 'Categorías', exact: false },
+      { to: '/resenas' as const, icon: MessageSquare, label: 'Reseñas', exact: false },
     ],
   },
   {

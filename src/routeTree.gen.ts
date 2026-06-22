@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosIndexRouteImport } from './routes/_authenticated/usuarios/index'
+import { Route as AuthenticatedResenasIndexRouteImport } from './routes/_authenticated/resenas/index'
 import { Route as AuthenticatedProductosIndexRouteImport } from './routes/_authenticated/productos/index'
 import { Route as AuthenticatedCategoriasIndexRouteImport } from './routes/_authenticated/categorias/index'
 import { Route as AuthenticatedProductosNuevoRouteImport } from './routes/_authenticated/productos/nuevo'
@@ -42,6 +43,12 @@ const AuthenticatedUsuariosIndexRoute =
   AuthenticatedUsuariosIndexRouteImport.update({
     id: '/usuarios/',
     path: '/usuarios/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedResenasIndexRoute =
+  AuthenticatedResenasIndexRouteImport.update({
+    id: '/resenas/',
+    path: '/resenas/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedProductosIndexRoute =
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/productos/nuevo': typeof AuthenticatedProductosNuevoRoute
   '/categorias/': typeof AuthenticatedCategoriasIndexRoute
   '/productos/': typeof AuthenticatedProductosIndexRoute
+  '/resenas/': typeof AuthenticatedResenasIndexRoute
   '/usuarios/': typeof AuthenticatedUsuariosIndexRoute
 }
 export interface FileRoutesByTo {
@@ -87,6 +95,7 @@ export interface FileRoutesByTo {
   '/productos/nuevo': typeof AuthenticatedProductosNuevoRoute
   '/categorias': typeof AuthenticatedCategoriasIndexRoute
   '/productos': typeof AuthenticatedProductosIndexRoute
+  '/resenas': typeof AuthenticatedResenasIndexRoute
   '/usuarios': typeof AuthenticatedUsuariosIndexRoute
 }
 export interface FileRoutesById {
@@ -99,6 +108,7 @@ export interface FileRoutesById {
   '/_authenticated/productos/nuevo': typeof AuthenticatedProductosNuevoRoute
   '/_authenticated/categorias/': typeof AuthenticatedCategoriasIndexRoute
   '/_authenticated/productos/': typeof AuthenticatedProductosIndexRoute
+  '/_authenticated/resenas/': typeof AuthenticatedResenasIndexRoute
   '/_authenticated/usuarios/': typeof AuthenticatedUsuariosIndexRoute
 }
 export interface FileRouteTypes {
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/productos/nuevo'
     | '/categorias/'
     | '/productos/'
+    | '/resenas/'
     | '/usuarios/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/productos/nuevo'
     | '/categorias'
     | '/productos'
+    | '/resenas'
     | '/usuarios'
   id:
     | '__root__'
@@ -132,6 +144,7 @@ export interface FileRouteTypes {
     | '/_authenticated/productos/nuevo'
     | '/_authenticated/categorias/'
     | '/_authenticated/productos/'
+    | '/_authenticated/resenas/'
     | '/_authenticated/usuarios/'
   fileRoutesById: FileRoutesById
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/resenas/': {
+      id: '/_authenticated/resenas/'
+      path: '/resenas'
+      fullPath: '/resenas/'
+      preLoaderRoute: typeof AuthenticatedResenasIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/productos/': {
       id: '/_authenticated/productos/'
       path: '/productos'
@@ -215,6 +235,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProductosNuevoRoute: typeof AuthenticatedProductosNuevoRoute
   AuthenticatedCategoriasIndexRoute: typeof AuthenticatedCategoriasIndexRoute
   AuthenticatedProductosIndexRoute: typeof AuthenticatedProductosIndexRoute
+  AuthenticatedResenasIndexRoute: typeof AuthenticatedResenasIndexRoute
   AuthenticatedUsuariosIndexRoute: typeof AuthenticatedUsuariosIndexRoute
 }
 
@@ -224,6 +245,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProductosNuevoRoute: AuthenticatedProductosNuevoRoute,
   AuthenticatedCategoriasIndexRoute: AuthenticatedCategoriasIndexRoute,
   AuthenticatedProductosIndexRoute: AuthenticatedProductosIndexRoute,
+  AuthenticatedResenasIndexRoute: AuthenticatedResenasIndexRoute,
   AuthenticatedUsuariosIndexRoute: AuthenticatedUsuariosIndexRoute,
 }
 
