@@ -22,6 +22,7 @@ import {
   useReorderCategories,
 } from '../hooks/useCategoryMutations'
 import { fetchCategoryProductCount, type Category } from '../api/categories.api'
+import { useRouteContext } from '@tanstack/react-router'
 import { sileo } from 'sileo'
 import { cn } from '@/lib/utils'
 
@@ -38,6 +39,7 @@ function CategoryCard({
   onMoveUp,
   onMoveDown,
   isDeleting,
+  isAdmin,
 }: {
   cat: Category
   index: number
@@ -47,6 +49,7 @@ function CategoryCard({
   onMoveUp: () => void
   onMoveDown: () => void
   isDeleting: boolean
+  isAdmin: boolean
 }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const handleRef = useRef<HTMLButtonElement>(null)
@@ -158,14 +161,16 @@ function CategoryCard({
         >
           <Pencil className="h-3.5 w-3.5" />
         </button>
-        <button
-          onClick={onDelete}
-          disabled={isDeleting}
-          aria-label="Eliminar categoría"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors disabled:opacity-30"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        {isAdmin && (
+          <button
+            onClick={onDelete}
+            disabled={isDeleting}
+            aria-label="Eliminar categoría"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors disabled:opacity-30"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
     </div>
   )
@@ -173,7 +178,7 @@ function CategoryCard({
 
 // ─── Empty State ───────────────────────────────────────────────────────────────
 
-function EmptyState({ onAdd }: { onAdd: () => void }) {
+function EmptyState({ onAdd }: { onAdd?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="relative mb-5">
@@ -188,10 +193,12 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       <p className="text-xs text-muted-foreground mt-1.5 mb-5 max-w-50 leading-relaxed">
         Crea categorías para organizar el catálogo de productos.
       </p>
-      <Button size="sm" onClick={onAdd}>
-        <Plus className="h-4 w-4" />
-        Crear primera categoría
-      </Button>
+      {onAdd && (
+        <Button size="sm" onClick={onAdd}>
+          <Plus className="h-4 w-4" />
+          Crear primera categoría
+        </Button>
+      )}
     </div>
   )
 }
@@ -203,6 +210,8 @@ interface CategoryTableProps {
 }
 
 export function CategoryTable({ categories }: CategoryTableProps) {
+  const { userRole } = useRouteContext({ from: '/_authenticated' })
+  const isAdmin = userRole === 'admin'
   const [localCats, setLocalCats] = useState<Category[]>(categories)
   const [editing, setEditing] = useState<Category | null>(null)
   const [creating, setCreating] = useState(false)
@@ -342,15 +351,17 @@ export function CategoryTable({ categories }: CategoryTableProps) {
             )}
           </div>
         </div>
-        <Button onClick={() => setCreating(true)} size="sm">
-          <Plus className="h-4 w-4" />
-          Nueva categoría
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setCreating(true)} size="sm">
+            <Plus className="h-4 w-4" />
+            Nueva categoría
+          </Button>
+        )}
       </div>
 
       {/* ── Card list ── */}
       {localCats.length === 0 ? (
-        <EmptyState onAdd={() => setCreating(true)} />
+        <EmptyState onAdd={isAdmin ? () => setCreating(true) : undefined} />
       ) : (
         <div className="space-y-2">
           {localCats.map((cat, idx) => (
@@ -364,22 +375,25 @@ export function CategoryTable({ categories }: CategoryTableProps) {
               onMoveUp={() => moveCategory(cat.id, 'up')}
               onMoveDown={() => moveCategory(cat.id, 'down')}
               isDeleting={deleteMutation.isPending && deleteMutation.variables === cat.id}
+              isAdmin={isAdmin}
             />
           ))}
 
-          {/* Add at bottom */}
-          <button
-            onClick={() => setCreating(true)}
-            className={cn(
-              'w-full flex items-center justify-center gap-2 rounded-xl py-3',
-              'border-2 border-dashed border-border/40 text-sm text-muted-foreground',
-              'hover:border-accent/40 hover:text-accent',
-              'transition-colors duration-150',
-            )}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Añadir categoría
-          </button>
+          {/* Add at bottom — admin only */}
+          {isAdmin && (
+            <button
+              onClick={() => setCreating(true)}
+              className={cn(
+                'w-full flex items-center justify-center gap-2 rounded-xl py-3',
+                'border-2 border-dashed border-border/40 text-sm text-muted-foreground',
+                'hover:border-accent/40 hover:text-accent',
+                'transition-colors duration-150',
+              )}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Añadir categoría
+            </button>
+          )}
         </div>
       )}
 

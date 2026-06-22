@@ -6,6 +6,8 @@ import { Plus, Users, Shield, UserRound, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
+import { useAuthStore } from '@/features/auth/store/auth-store'
 import { Badge } from '@/components/ui/badge'
 import {
   Sheet,
@@ -41,6 +43,7 @@ export function UsersTable() {
   const { data: users, isLoading } = useUsers()
   const { userRole } = useRouteContext({ from: '/_authenticated' })
   const isAdmin = userRole === 'admin'
+  const currentUserId = useAuthStore((s) => s.user?.id)
   const createMutation = useCreateUser()
   const deleteMutation = useDeleteUser()
 
@@ -126,7 +129,7 @@ export function UsersTable() {
               <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="text-[10px] shrink-0">
                 {user.role === 'admin' ? 'Admin' : 'Empleado'}
               </Badge>
-              {isAdmin && (
+              {isAdmin && user.id !== currentUserId && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -178,8 +181,7 @@ export function UsersTable() {
 
               <div className="flex flex-col gap-1.5">
                 <Label>Contraseña</Label>
-                <Input
-                  type="password"
+                <PasswordInput
                   placeholder="Mínimo 6 caracteres"
                   {...register('password')}
                   aria-invalid={!!errors.password}

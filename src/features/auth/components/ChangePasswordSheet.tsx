@@ -4,8 +4,8 @@ import { z } from 'zod'
 import { Lock } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import {
   Sheet,
   SheetContent,
@@ -82,16 +82,12 @@ export function ChangePasswordSheet({ open, onOpenChange }: Props) {
               <Label className="text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted-foreground">
                 Nueva contraseña
               </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="password"
-                  placeholder="Mínimo 6 caracteres"
-                  className="pl-9"
-                  {...register('password')}
-                  aria-invalid={!!errors.password}
-                />
-              </div>
+              <PasswordInput
+                leftIcon={<Lock className="h-3.5 w-3.5" />}
+                placeholder="Mínimo 6 caracteres"
+                {...register('password')}
+                aria-invalid={!!errors.password}
+              />
               {errors.password && (
                 <p className="text-xs text-destructive">{errors.password.message}</p>
               )}
@@ -101,16 +97,12 @@ export function ChangePasswordSheet({ open, onOpenChange }: Props) {
               <Label className="text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted-foreground">
                 Confirmar contraseña
               </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="password"
-                  placeholder="Repetí la contraseña"
-                  className="pl-9"
-                  {...register('confirm')}
-                  aria-invalid={!!errors.confirm}
-                />
-              </div>
+              <PasswordInput
+                leftIcon={<Lock className="h-3.5 w-3.5" />}
+                placeholder="Repetí la contraseña"
+                {...register('confirm')}
+                aria-invalid={!!errors.confirm}
+              />
               {errors.confirm && (
                 <p className="text-xs text-destructive">{errors.confirm.message}</p>
               )}

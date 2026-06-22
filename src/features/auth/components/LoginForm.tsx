@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 
 type Mode = 'login' | 'forgot'
 
@@ -132,18 +133,14 @@ export function LoginForm() {
               <Label htmlFor="password" className="text-[10.5px] font-semibold tracking-[0.8px] uppercase text-muted-foreground">
                 Contraseña
               </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  className="pl-9"
-                />
-              </div>
+              <PasswordInput
+                id="password"
+                leftIcon={<Lock className="h-3.5 w-3.5" />}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
             </div>
 
             {loginError && (
