@@ -326,7 +326,7 @@ export function CategoryTable({ categories }: CategoryTableProps) {
     }
   }
 
-  const pendingDeleteName = localCats.find((c) => c.id === pendingDeleteId)?.nombre
+  const pendingDeleteName = localCats.find((c) => c.id === pendingDeleteId)?.nombre ?? ''
   const isBlocked = linkedCount !== null && linkedCount > 0
 
   return (

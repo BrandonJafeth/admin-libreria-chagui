@@ -173,10 +173,19 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
                 onSuccess: () => sileo.success({ title: 'Imagen principal actualizada' }),
                 onError: (err) => sileo.error({ title: 'Error', description: err.message }),
               })}
-              onDelete={() => deleteMutation.mutate({ imageId: img.id, url: img.url }, {
-                onSuccess: () => sileo.success({ title: 'Imagen eliminada' }),
-                onError: (err) => sileo.error({ title: 'Error al eliminar', description: err.message }),
-              })}
+              onDelete={() => {
+                const wasPrincipal = img.es_principal
+                const nextPrincipal = localImages.find((i) => i.id !== img.id)
+                deleteMutation.mutate({ imageId: img.id, url: img.url }, {
+                  onSuccess: () => {
+                    sileo.success({ title: 'Imagen eliminada' })
+                    if (wasPrincipal && nextPrincipal) {
+                      setMainMutation.mutate(nextPrincipal.id)
+                    }
+                  },
+                  onError: (err) => sileo.error({ title: 'Error al eliminar', description: err.message }),
+                })
+              }}
               isDeleting={deleteMutation.isPending && (deleteMutation.variables as { imageId: string })?.imageId === img.id}
               isSettingMain={setMainMutation.isPending && setMainMutation.variables === img.id}
             />
