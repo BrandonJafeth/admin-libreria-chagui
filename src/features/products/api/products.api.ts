@@ -136,6 +136,9 @@ export async function deleteProduct(id: string): Promise<void> {
     }
   }
 
+  const { error: reviewErr } = await supabase.from('product_reviews').delete().eq('product_id', id)
+  if (reviewErr) throw reviewErr
+
   const { error } = await supabase.from('products').delete().eq('id', id)
   if (error) throw error
 }

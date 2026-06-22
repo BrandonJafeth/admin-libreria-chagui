@@ -5,7 +5,7 @@ import { REVIEWS_KEY } from './useReviews'
 export function useApproveReview() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => approveReview(id),
+    mutationFn: approveReview,
     onSuccess: () => qc.invalidateQueries({ queryKey: REVIEWS_KEY }),
   })
 }
@@ -13,7 +13,7 @@ export function useApproveReview() {
 export function useDeleteReview() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => deleteReview(id),
+    mutationFn: deleteReview,
     onSuccess: () => qc.invalidateQueries({ queryKey: REVIEWS_KEY }),
   })
 }
