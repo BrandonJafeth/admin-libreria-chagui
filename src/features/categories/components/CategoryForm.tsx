@@ -47,12 +47,9 @@ export function CategoryForm({
 
   const nombre = watch('nombre')
 
-  // Auto-generate slug from nombre only in create mode
   useEffect(() => {
-    if (!defaultValues?.slug) {
-      setValue('slug', generateSlug(nombre))
-    }
-  }, [nombre, defaultValues?.slug, setValue])
+    setValue('slug', generateSlug(nombre))
+  }, [nombre, setValue])
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
@@ -75,7 +72,9 @@ export function CategoryForm({
           id="slug"
           {...register('slug')}
           placeholder="escolar"
+          readOnly
           aria-invalid={!!errors.slug}
+          className="bg-muted/50 cursor-not-allowed text-muted-foreground select-none"
         />
         {errors.slug && (
           <p className="text-xs text-destructive">{errors.slug.message}</p>

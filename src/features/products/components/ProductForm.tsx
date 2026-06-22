@@ -101,10 +101,8 @@ export function ProductForm({
   const categoryIds = watch('category_ids')
 
   useEffect(() => {
-    if (!defaultValues?.slug) {
-      setValue('slug', generateSlug(nombre))
-    }
-  }, [nombre, defaultValues?.slug, setValue])
+    setValue('slug', generateSlug(nombre))
+  }, [nombre, setValue])
 
   function toggleCategory(id: string) {
     const next = categoryIds.includes(id)
@@ -179,8 +177,11 @@ export function ProductForm({
           {...register('slug')}
           placeholder="lapicero-azul-x3"
           maxLength={SLUG_MAX}
+          readOnly
           aria-invalid={!!errors.slug}
+          className="bg-muted/50 cursor-not-allowed text-muted-foreground select-none"
         />
+        <p className="text-[11px] text-muted-foreground">Se genera automáticamente desde el nombre.</p>
         <FieldError message={errors.slug?.message} />
       </div>
 
