@@ -42,6 +42,8 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
   localImagesRef.current = localImages
   const reorderRef = useRef(reorderMutation.mutate)
   reorderRef.current = reorderMutation.mutate
+  const colorsCountRef = useRef(colorsCount)
+  colorsCountRef.current = colorsCount
 
   useEffect(() => {
     setLocalImages([...images].sort((a, b) => a.orden - b.orden))
@@ -87,9 +89,9 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
           extractDominantColor(file)
             .then((hex) =>
               upsertColorMutation.mutate({
-                nombre: `Color ${colorsCount + baseOrden + i + 1}`,
+                nombre: `Color ${colorsCountRef.current + baseOrden + i + 1}`,
                 hex,
-                orden: colorsCount + baseOrden + i,
+                orden: colorsCountRef.current + baseOrden + i,
               }),
             )
             .catch(() => {})

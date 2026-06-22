@@ -9,7 +9,10 @@ export function useAuth() {
   const qc = useQueryClient()
   const setSession = useAuthStore((s) => s.setSession)
   const setLoading = useAuthStore((s) => s.setLoading)
-  const state = useAuthStore()
+  const session = useAuthStore((s) => s.session)
+  const user = useAuthStore((s) => s.user)
+  const isLoading = useAuthStore((s) => s.isLoading)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -28,10 +31,10 @@ export function useAuth() {
   }, [setSession, setLoading])
 
   return {
-    session: state.session,
-    user: state.user,
-    isLoading: state.isLoading,
-    isAuthenticated: state.isAuthenticated,
+    session,
+    user,
+    isLoading,
+    isAuthenticated,
     signOut: async () => {
       await supabase.auth.signOut()
       qc.clear()

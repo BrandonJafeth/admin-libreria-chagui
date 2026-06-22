@@ -591,7 +591,7 @@ function ProductCard({ product, mainImageUrl, onEdit, onDelete, isDeleting, isAd
     <div className="card-solid rounded-xl overflow-hidden flex flex-col">
       <div className="relative aspect-square bg-muted overflow-hidden">
         {mainImageUrl ? (
-          <img src={mainImageUrl} alt={product.nombre} className="w-full h-full object-cover" />
+          <img src={mainImageUrl} alt={product.nombre} className="w-full h-full object-cover" loading="lazy" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Package className="h-8 w-8 text-muted-foreground/25" />
@@ -683,6 +683,7 @@ function ProductTableRow({ product, mainImageUrl, onEdit, onDelete, isDeleting, 
             src={mainImageUrl}
             alt={product.nombre}
             className="h-10 w-10 rounded-lg object-cover border border-border"
+            loading="lazy"
           />
         ) : (
           <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
