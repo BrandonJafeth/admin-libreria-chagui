@@ -11,6 +11,7 @@ import {
 import type { ProductImage } from '../api/products.api'
 import { sileo } from 'sileo'
 import { extractDominantColor } from '@/lib/colorExtractor'
+import { mapSupabaseError } from '@/lib/errors'
 import {
   draggable,
   dropTargetForElements,
@@ -115,8 +116,8 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
   async function handleCropConfirm(croppedFile: File) {
     try {
       await uploadFiles([croppedFile])
-    } catch {
-      sileo.error({ title: 'Error al subir imagen', description: 'No se pudo subir. Intenta de nuevo.' })
+    } catch (err) {
+      sileo.error({ title: 'Error al subir imagen', description: mapSupabaseError(err) })
     } finally {
       setCropQueue((q) => q.slice(1))
     }
@@ -125,8 +126,8 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
   async function handleCropSkip(originalFile: File) {
     try {
       await uploadFiles([originalFile])
-    } catch {
-      sileo.error({ title: 'Error al subir imagen', description: 'No se pudo subir. Intenta de nuevo.' })
+    } catch (err) {
+      sileo.error({ title: 'Error al subir imagen', description: mapSupabaseError(err) })
     } finally {
       setCropQueue((q) => q.slice(1))
     }
@@ -171,7 +172,7 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
               image={img}
               onSetMain={() => setMainMutation.mutate(img.id, {
                 onSuccess: () => sileo.success({ title: 'Imagen principal actualizada' }),
-                onError: (err) => sileo.error({ title: 'Error', description: err.message }),
+                onError: (err) => sileo.error({ title: 'Error', description: mapSupabaseError(err) }),
               })}
               onDelete={() => {
                 const wasPrincipal = img.es_principal
@@ -183,7 +184,7 @@ export function ImageUploader({ productId, images, colorsCount = 0 }: ImageUploa
                       setMainMutation.mutate(nextPrincipal.id)
                     }
                   },
-                  onError: (err) => sileo.error({ title: 'Error al eliminar', description: err.message }),
+                  onError: (err) => sileo.error({ title: 'Error al eliminar', description: mapSupabaseError(err) }),
                 })
               }}
               isDeleting={deleteMutation.isPending && (deleteMutation.variables as { imageId: string })?.imageId === img.id}

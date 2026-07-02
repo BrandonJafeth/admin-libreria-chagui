@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
+import { mapSupabaseError } from '@/lib/errors'
 
 export const Route = createFileRoute('/reset-password')({
   component: ResetPasswordPage,
@@ -55,7 +56,7 @@ function ResetPasswordPage() {
     setGlobalError(null)
     const { error } = await supabase.auth.updateUser({ password: values.password })
     if (error) {
-      setGlobalError(error.message)
+      setGlobalError(mapSupabaseError(error))
       return
     }
     supabase.functions.invoke('notify-password-changed', { body: {} }).catch(console.error)

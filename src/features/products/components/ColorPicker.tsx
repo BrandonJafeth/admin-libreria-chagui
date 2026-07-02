@@ -10,6 +10,7 @@ import {
 import type { ProductColor } from '../api/products.api'
 import { sileo } from 'sileo'
 import { extractDominantColor } from '@/lib/colorExtractor'
+import { mapSupabaseError } from '@/lib/errors'
 
 interface ColorPickerProps {
   productId: string
@@ -40,7 +41,7 @@ export function ColorPicker({ productId, colors }: ColorPickerProps) {
       await upsertMutation.mutateAsync({ id: color.id, nombre: trimmed, hex: color.hex ?? null, orden: color.orden })
       sileo.success({ title: 'Color renombrado' })
     } catch (err) {
-      sileo.error({ title: 'Error al renombrar', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+      sileo.error({ title: 'Error al renombrar', description: mapSupabaseError(err) })
     }
   }
 
@@ -71,7 +72,7 @@ export function ColorPicker({ productId, colors }: ColorPickerProps) {
       setHex('')
       sileo.success({ title: 'Color agregado' })
     } catch (err) {
-      sileo.error({ title: 'Error al agregar color', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+      sileo.error({ title: 'Error al agregar color', description: mapSupabaseError(err) })
     }
   }
 
@@ -117,7 +118,7 @@ export function ColorPicker({ productId, colors }: ColorPickerProps) {
               <button
                 onClick={() => deleteMutation.mutate(color.id, {
                   onSuccess: () => sileo.success({ title: 'Color eliminado' }),
-                  onError: (err) => sileo.error({ title: 'Error al eliminar', description: err.message }),
+                  onError: (err) => sileo.error({ title: 'Error al eliminar', description: mapSupabaseError(err) }),
                 })}
                 disabled={deleteMutation.isPending && deleteMutation.variables === color.id}
                 title="Eliminar color"

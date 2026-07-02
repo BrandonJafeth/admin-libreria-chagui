@@ -29,6 +29,7 @@ import { useRouteContext } from '@tanstack/react-router'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useUsers, useCreateUser, useDeleteUser } from '../hooks/useUsers'
 import { sileo } from 'sileo'
+import { mapSupabaseError } from '@/lib/errors'
 
 const schema = z.object({
   email: z.string().email('Email inválido'),
@@ -55,7 +56,7 @@ export function UsersTable() {
         setDeletingId(null)
         sileo.success({ title: 'Usuario eliminado' })
       },
-      onError: (err) => sileo.error({ title: 'Error al eliminar', description: err.message }),
+      onError: (err) => sileo.error({ title: 'Error al eliminar', description: mapSupabaseError(err) }),
     })
   }
 
@@ -77,7 +78,7 @@ export function UsersTable() {
       setCreating(false)
       sileo.success({ title: 'Usuario creado' })
     } catch (err) {
-      sileo.error({ title: 'Error al crear usuario', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+      sileo.error({ title: 'Error al crear usuario', description: mapSupabaseError(err) })
     }
   }
 
@@ -103,7 +104,7 @@ export function UsersTable() {
 
       {/* Error */}
       {!isLoading && error && (
-        <p className="text-sm text-destructive">Error cargando usuarios: {error.message}</p>
+        <p className="text-sm text-destructive">Error cargando usuarios: {mapSupabaseError(error)}</p>
       )}
 
       {/* Empty */}
@@ -217,7 +218,7 @@ export function UsersTable() {
               </div>
 
               {createMutation.isError && (
-                <p className="text-sm text-destructive">{createMutation.error.message}</p>
+                <p className="text-sm text-destructive">{mapSupabaseError(createMutation.error)}</p>
               )}
 
               <div className="flex gap-2 pt-2">

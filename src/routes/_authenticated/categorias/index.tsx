@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useCategories } from '@/features/categories/hooks/useCategories'
 import { CategoryTable } from '@/features/categories/components/CategoryTable'
 import { Skeleton } from '@/components/ui/skeleton'
+import { mapSupabaseError } from '@/lib/errors'
 
 export const Route = createFileRoute('/_authenticated/categorias/')({
   staticData: { breadcrumb: 'Categorías' },
@@ -12,7 +13,7 @@ function CategoriasPage() {
   const { data: categories, isLoading, error } = useCategories()
 
   if (error) {
-    return <p className="text-destructive text-sm">Error: {error.message}</p>
+    return <p className="text-destructive text-sm">Error: {mapSupabaseError(error)}</p>
   }
 
   if (isLoading) {

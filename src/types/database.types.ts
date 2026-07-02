@@ -153,6 +153,69 @@ export interface Database {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          id: string
+          customer_name: string
+          customer_phone: string
+          notes: string | null
+          total: number
+          status: 'pendiente' | 'confirmado' | 'cancelado'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          customer_name: string
+          customer_phone: string
+          notes?: string | null
+          total: number
+          status?: 'pendiente' | 'confirmado' | 'cancelado'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          customer_name?: string
+          customer_phone?: string
+          notes?: string | null
+          total?: number
+          status?: 'pendiente' | 'confirmado' | 'cancelado'
+          created_at?: string
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          id: string
+          order_id: string
+          product_id: string | null
+          product_nombre: string
+          color: string | null
+          precio_unitario: number
+          cantidad: number
+          subtotal: number
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_nombre: string
+          color?: string | null
+          precio_unitario: number
+          cantidad: number
+          subtotal: number
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_nombre?: string
+          color?: string | null
+          precio_unitario?: number
+          cantidad?: number
+          subtotal?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string

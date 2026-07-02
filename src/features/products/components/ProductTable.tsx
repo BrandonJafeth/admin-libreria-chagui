@@ -48,6 +48,7 @@ import { ProductForm, type ProductFormValues } from './ProductForm'
 import { ImageUploader } from './ImageUploader'
 import { ColorPicker } from './ColorPicker'
 import { formatPrice } from '@/lib/utils'
+import { mapSupabaseError } from '@/lib/errors'
 import { useRouteContext } from '@tanstack/react-router'
 import { sileo } from 'sileo'
 import { td } from '@/lib/td'
@@ -149,7 +150,7 @@ export function ProductTable() {
         description: td('**Siguiente paso:** sube imágenes y configura colores.\n- Imágenes desde la pestaña de fotos\n- Colores desde la paleta'),
       })
     } catch (err) {
-      sileo.error({ title: 'Error al crear producto', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+      sileo.error({ title: 'Error al crear producto', description: mapSupabaseError(err) })
     }
   }
 
@@ -159,8 +160,8 @@ export function ProductTable() {
       await deleteMutation.mutateAsync(pendingDelete.id)
       setPendingDelete(null)
       sileo.success({ title: 'Producto eliminado' })
-    } catch {
-      sileo.error({ title: 'Error al eliminar producto' })
+    } catch (err) {
+      sileo.error({ title: 'Error al eliminar producto', description: mapSupabaseError(err) })
     }
   }
 
@@ -168,7 +169,7 @@ export function ProductTable() {
     p.product_images.find((i) => i.es_principal) ?? p.product_images[0]
 
   if (error) {
-    return <p className="text-destructive text-sm">Error cargando productos: {error.message}</p>
+    return <p className="text-destructive text-sm">Error cargando productos: {mapSupabaseError(error)}</p>
   }
 
   return (
@@ -532,7 +533,7 @@ export function ProductTable() {
         title={`¿Eliminar "${pendingDelete?.nombre}"?`}
         description={
           deleteMutation.isError
-            ? `Error: ${deleteMutation.error?.message}`
+            ? `Error: ${mapSupabaseError(deleteMutation.error)}`
             : 'Esta acción no se puede deshacer.'
         }
         onConfirm={confirmDelete}
@@ -554,7 +555,7 @@ export function ProductTable() {
               submitLabel="Crear producto"
             />
             {createMutation.isError && (
-              <p className="text-sm text-destructive mt-3">{createMutation.error.message}</p>
+              <p className="text-sm text-destructive mt-3">{mapSupabaseError(createMutation.error)}</p>
             )}
           </div>
         </SheetContent>
@@ -765,7 +766,7 @@ function ProductEditSheet({ productId, open, onOpenChange }: ProductEditSheetPro
       await updateMutation.mutateAsync({ updates, categoryIds: category_ids })
       sileo.success({ title: 'Producto actualizado' })
     } catch (err) {
-      sileo.error({ title: 'Error al actualizar', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+      sileo.error({ title: 'Error al actualizar', description: mapSupabaseError(err) })
     }
   }
 
@@ -787,7 +788,7 @@ function ProductEditSheet({ productId, open, onOpenChange }: ProductEditSheetPro
               ))}
             </div>
           ) : error ? (
-            <p className="text-sm text-destructive">Error cargando producto: {error.message}</p>
+            <p className="text-sm text-destructive">Error cargando producto: {mapSupabaseError(error)}</p>
           ) : product ? (
             <>
               <section>
@@ -803,7 +804,7 @@ function ProductEditSheet({ productId, open, onOpenChange }: ProductEditSheetPro
                   submitLabel="Actualizar"
                 />
                 {updateMutation.isError && (
-                  <p className="text-sm text-destructive mt-2">{updateMutation.error.message}</p>
+                  <p className="text-sm text-destructive mt-2">{mapSupabaseError(updateMutation.error)}</p>
                 )}
               </section>
 

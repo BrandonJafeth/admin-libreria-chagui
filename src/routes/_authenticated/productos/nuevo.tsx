@@ -4,6 +4,7 @@ import { ProductForm, type ProductFormValues } from '@/features/products/compone
 import { useCreateProduct } from '@/features/products/hooks/useProductMutations'
 import { sileo } from 'sileo'
 import { td } from '@/lib/td'
+import { mapSupabaseError } from '@/lib/errors'
 
 export const Route = createFileRoute('/_authenticated/productos/nuevo')({
   staticData: { breadcrumb: 'Nuevo producto' },
@@ -39,7 +40,9 @@ function NuevoProductoPage() {
         params: { productId: created.id },
       })
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Error desconocido. Intenta de nuevo.')
+      const message = mapSupabaseError(err)
+      setApiError(message)
+      sileo.error({ title: 'Error al crear producto', description: message })
     }
   }
 

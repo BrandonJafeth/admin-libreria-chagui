@@ -6,6 +6,7 @@ import { useProduct } from '@/features/products/hooks/useProduct'
 import { useUpdateProduct } from '@/features/products/hooks/useProductMutations'
 import { ProductForm, type ProductFormValues } from '@/features/products/components/ProductForm'
 import { sileo } from 'sileo'
+import { mapSupabaseError } from '@/lib/errors'
 import { ImageUploader } from '@/features/products/components/ImageUploader'
 import { ColorPicker } from '@/features/products/components/ColorPicker'
 import { Separator } from '@/components/ui/separator'
@@ -42,8 +43,9 @@ function ProductDetailPage() {
       await updateMutation.mutateAsync({ updates, categoryIds: category_ids })
       sileo.success({ title: 'Producto actualizado' })
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : 'Error desconocido. Intenta de nuevo.')
-      sileo.error({ title: 'Error al actualizar' })
+      const message = mapSupabaseError(err)
+      setApiError(message)
+      sileo.error({ title: 'Error al actualizar', description: message })
     }
   }
 
@@ -111,7 +113,7 @@ function ProductError({ error }: { error: Error }) {
   return (
     <div className="max-w-md">
       <p className="text-destructive font-medium">Error cargando producto</p>
-      <p className="text-sm text-muted-foreground mt-1">{error.message}</p>
+      <p className="text-sm text-muted-foreground mt-1">{mapSupabaseError(error)}</p>
     </div>
   )
 }

@@ -14,6 +14,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { sileo } from 'sileo'
+import { mapSupabaseError } from '@/lib/errors'
 
 const schema = z
   .object({
@@ -46,7 +47,7 @@ export function ChangePasswordSheet({ open, onOpenChange }: Props) {
   async function onSubmit(values: FormValues) {
     const { error } = await supabase.auth.updateUser({ password: values.password })
     if (error) {
-      sileo.error({ title: 'Error al cambiar contraseña', description: error.message })
+      sileo.error({ title: 'Error al cambiar contraseña', description: mapSupabaseError(error) })
       return
     }
 

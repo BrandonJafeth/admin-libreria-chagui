@@ -17,6 +17,7 @@ import { useApproveReview, useDeleteReview } from '../hooks/useReviewMutations'
 import type { ReviewWithProduct, ReviewFilter } from '../api/reviews.api'
 import { sileo } from 'sileo'
 import { cn } from '@/lib/utils'
+import { mapSupabaseError } from '@/lib/errors'
 
 // ─── Star Rating display ──────────────────────────────────────────────────────
 
@@ -151,7 +152,7 @@ export function ReviewsTable() {
       await approveMutation.mutateAsync(review.id)
       sileo.success({ title: 'Reseña aprobada', description: `De ${review.author_name}` })
     } catch (err) {
-      sileo.error({ title: 'Error al aprobar', description: (err as Error).message })
+      sileo.error({ title: 'Error al aprobar', description: mapSupabaseError(err) })
     }
   }
 
@@ -218,7 +219,7 @@ export function ReviewsTable() {
 
       {/* ── Error ── */}
       {error && (
-        <p className="text-sm text-destructive">Error: {error.message}</p>
+        <p className="text-sm text-destructive">Error: {mapSupabaseError(error)}</p>
       )}
 
       {/* ── Loading skeleton ── */}
@@ -291,7 +292,7 @@ export function ReviewsTable() {
         title={`¿Eliminar reseña de "${pendingDelete?.author_name}"?`}
         description={
           deleteMutation.isError
-            ? `Error: ${deleteMutation.error?.message}`
+            ? `Error: ${mapSupabaseError(deleteMutation.error)}`
             : 'Esta acción no se puede deshacer.'
         }
         onConfirm={confirmDelete}

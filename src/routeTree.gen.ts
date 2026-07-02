@@ -16,6 +16,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedUsuariosIndexRouteImport } from './routes/_authenticated/usuarios/index'
 import { Route as AuthenticatedResenasIndexRouteImport } from './routes/_authenticated/resenas/index'
 import { Route as AuthenticatedProductosIndexRouteImport } from './routes/_authenticated/productos/index'
+import { Route as AuthenticatedPedidosIndexRouteImport } from './routes/_authenticated/pedidos/index'
 import { Route as AuthenticatedCategoriasIndexRouteImport } from './routes/_authenticated/categorias/index'
 import { Route as AuthenticatedProductosNuevoRouteImport } from './routes/_authenticated/productos/nuevo'
 import { Route as AuthenticatedProductosProductIdRouteImport } from './routes/_authenticated/productos/$productId'
@@ -57,6 +58,12 @@ const AuthenticatedProductosIndexRoute =
     path: '/productos/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedPedidosIndexRoute =
+  AuthenticatedPedidosIndexRouteImport.update({
+    id: '/pedidos/',
+    path: '/pedidos/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedCategoriasIndexRoute =
   AuthenticatedCategoriasIndexRouteImport.update({
     id: '/categorias/',
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/productos/$productId': typeof AuthenticatedProductosProductIdRoute
   '/productos/nuevo': typeof AuthenticatedProductosNuevoRoute
   '/categorias/': typeof AuthenticatedCategoriasIndexRoute
+  '/pedidos/': typeof AuthenticatedPedidosIndexRoute
   '/productos/': typeof AuthenticatedProductosIndexRoute
   '/resenas/': typeof AuthenticatedResenasIndexRoute
   '/usuarios/': typeof AuthenticatedUsuariosIndexRoute
@@ -94,6 +102,7 @@ export interface FileRoutesByTo {
   '/productos/$productId': typeof AuthenticatedProductosProductIdRoute
   '/productos/nuevo': typeof AuthenticatedProductosNuevoRoute
   '/categorias': typeof AuthenticatedCategoriasIndexRoute
+  '/pedidos': typeof AuthenticatedPedidosIndexRoute
   '/productos': typeof AuthenticatedProductosIndexRoute
   '/resenas': typeof AuthenticatedResenasIndexRoute
   '/usuarios': typeof AuthenticatedUsuariosIndexRoute
@@ -107,6 +116,7 @@ export interface FileRoutesById {
   '/_authenticated/productos/$productId': typeof AuthenticatedProductosProductIdRoute
   '/_authenticated/productos/nuevo': typeof AuthenticatedProductosNuevoRoute
   '/_authenticated/categorias/': typeof AuthenticatedCategoriasIndexRoute
+  '/_authenticated/pedidos/': typeof AuthenticatedPedidosIndexRoute
   '/_authenticated/productos/': typeof AuthenticatedProductosIndexRoute
   '/_authenticated/resenas/': typeof AuthenticatedResenasIndexRoute
   '/_authenticated/usuarios/': typeof AuthenticatedUsuariosIndexRoute
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/productos/$productId'
     | '/productos/nuevo'
     | '/categorias/'
+    | '/pedidos/'
     | '/productos/'
     | '/resenas/'
     | '/usuarios/'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/productos/$productId'
     | '/productos/nuevo'
     | '/categorias'
+    | '/pedidos'
     | '/productos'
     | '/resenas'
     | '/usuarios'
@@ -143,6 +155,7 @@ export interface FileRouteTypes {
     | '/_authenticated/productos/$productId'
     | '/_authenticated/productos/nuevo'
     | '/_authenticated/categorias/'
+    | '/_authenticated/pedidos/'
     | '/_authenticated/productos/'
     | '/_authenticated/resenas/'
     | '/_authenticated/usuarios/'
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/pedidos/': {
+      id: '/_authenticated/pedidos/'
+      path: '/pedidos'
+      fullPath: '/pedidos/'
+      preLoaderRoute: typeof AuthenticatedPedidosIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/categorias/': {
       id: '/_authenticated/categorias/'
       path: '/categorias'
@@ -234,6 +254,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProductosProductIdRoute: typeof AuthenticatedProductosProductIdRoute
   AuthenticatedProductosNuevoRoute: typeof AuthenticatedProductosNuevoRoute
   AuthenticatedCategoriasIndexRoute: typeof AuthenticatedCategoriasIndexRoute
+  AuthenticatedPedidosIndexRoute: typeof AuthenticatedPedidosIndexRoute
   AuthenticatedProductosIndexRoute: typeof AuthenticatedProductosIndexRoute
   AuthenticatedResenasIndexRoute: typeof AuthenticatedResenasIndexRoute
   AuthenticatedUsuariosIndexRoute: typeof AuthenticatedUsuariosIndexRoute
@@ -244,6 +265,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProductosProductIdRoute: AuthenticatedProductosProductIdRoute,
   AuthenticatedProductosNuevoRoute: AuthenticatedProductosNuevoRoute,
   AuthenticatedCategoriasIndexRoute: AuthenticatedCategoriasIndexRoute,
+  AuthenticatedPedidosIndexRoute: AuthenticatedPedidosIndexRoute,
   AuthenticatedProductosIndexRoute: AuthenticatedProductosIndexRoute,
   AuthenticatedResenasIndexRoute: AuthenticatedResenasIndexRoute,
   AuthenticatedUsuariosIndexRoute: AuthenticatedUsuariosIndexRoute,

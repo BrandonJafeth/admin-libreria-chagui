@@ -25,6 +25,7 @@ import { fetchCategoryProductCount, type Category } from '../api/categories.api'
 import { useRouteContext } from '@tanstack/react-router'
 import { sileo } from 'sileo'
 import { cn } from '@/lib/utils'
+import { mapSupabaseError } from '@/lib/errors'
 
 type DragState = 'idle' | 'dragging' | 'over'
 
@@ -279,7 +280,7 @@ export function CategoryTable({ categories }: CategoryTableProps) {
       setCreating(false)
       sileo.success({ title: 'Categoría creada' })
     } catch (err) {
-      sileo.error({ title: 'Error al crear', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+      sileo.error({ title: 'Error al crear', description: mapSupabaseError(err) })
     }
   }
 
@@ -290,7 +291,7 @@ export function CategoryTable({ categories }: CategoryTableProps) {
       setEditing(null)
       sileo.success({ title: 'Categoría guardada' })
     } catch (err) {
-      sileo.error({ title: 'Error al guardar', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+      sileo.error({ title: 'Error al guardar', description: mapSupabaseError(err) })
     }
   }
 
@@ -322,7 +323,7 @@ export function CategoryTable({ categories }: CategoryTableProps) {
       setLinkedCount(null)
       sileo.success({ title: 'Categoría eliminada' })
     } catch (err) {
-      sileo.error({ title: 'Error al eliminar', description: err instanceof Error ? err.message : 'Intenta de nuevo' })
+      sileo.error({ title: 'Error al eliminar', description: mapSupabaseError(err) })
     }
   }
 
@@ -419,7 +420,7 @@ export function CategoryTable({ categories }: CategoryTableProps) {
               isLoading={createMutation.isPending}
             />
             {createMutation.isError && (
-              <p className="text-sm text-destructive mt-3">{createMutation.error.message}</p>
+              <p className="text-sm text-destructive mt-3">{mapSupabaseError(createMutation.error)}</p>
             )}
           </div>
         </SheetContent>
@@ -452,7 +453,7 @@ export function CategoryTable({ categories }: CategoryTableProps) {
                   isLoading={updateMutation.isPending}
                 />
                 {updateMutation.isError && (
-                  <p className="text-sm text-destructive mt-3">{updateMutation.error.message}</p>
+                  <p className="text-sm text-destructive mt-3">{mapSupabaseError(updateMutation.error)}</p>
                 )}
               </>
             )}
