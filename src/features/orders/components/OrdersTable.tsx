@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ShoppingCart, Package, Loader2, Eye, Phone } from 'lucide-react'
+import { ShoppingCart, Package, Loader2, Eye, Phone, ChevronDown, Check } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -10,13 +10,22 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/animate-ui/components/radix/dialog'
 import {
   Sheet,
   SheetContent,
@@ -33,14 +42,25 @@ import { sileo } from 'sileo'
 
 type StatusFilter = 'pendiente' | 'all'
 
-// ─── Status select (inline row control) ────────────────────────────────────────
+const STATUS_META: Record<OrderStatus, { label: string; variant: 'warning' | 'success' | 'destructive'; dot: string }> = {
+  pendiente: { label: 'Pendiente', variant: 'warning', dot: 'bg-accent-3' },
+  confirmado: { label: 'Confirmado', variant: 'success', dot: 'bg-green-500' },
+  cancelado: { label: 'Cancelado', variant: 'destructive', dot: 'bg-destructive' },
+}
+const STATUS_ORDER: OrderStatus[] = ['pendiente', 'confirmado', 'cancelado']
+
+// ─── Status control (inline row dropdown + optional cancel note) ──────────────
 
 function StatusSelect({ order }: { order: OrderListItem }) {
   const updateMutation = useUpdateOrderStatus()
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [cancelNote, setCancelNote] = useState('')
 
-  function handleChange(status: OrderStatus) {
+  const busy = updateMutation.isPending && updateMutation.variables?.id === order.id
+
+  function applyStatus(status: OrderStatus, notes?: string) {
     updateMutation.mutate(
-      { id: order.id, status },
+      { id: order.id, status, notes },
       {
         onSuccess: () => sileo.success({ title: 'Estado actualizado' }),
         onError: (err) => sileo.error({ title: 'Error al actualizar estado', description: mapSupabaseError(err) }),
@@ -48,19 +68,75 @@ function StatusSelect({ order }: { order: OrderListItem }) {
     )
   }
 
-  const busy = updateMutation.isPending && updateMutation.variables?.id === order.id
+  function handleSelect(status: OrderStatus) {
+    if (status === order.status) return
+    if (status === 'cancelado') {
+      setCancelNote('')
+      setCancelOpen(true)
+      return
+    }
+    applyStatus(status)
+  }
+
+  function confirmCancel() {
+    applyStatus('cancelado', cancelNote.trim() || undefined)
+    setCancelOpen(false)
+  }
+
+  const meta = STATUS_META[order.status]
 
   return (
-    <Select value={order.status} onValueChange={handleChange} disabled={busy}>
-      <SelectTrigger className="h-7 w-32 text-xs">
-        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SelectValue />}
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="pendiente">Pendiente</SelectItem>
-        <SelectItem value="confirmado">Confirmado</SelectItem>
-        <SelectItem value="cancelado">Cancelado</SelectItem>
-      </SelectContent>
-    </Select>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild disabled={busy}>
+          <button type="button" disabled={busy} className="inline-flex items-center disabled:opacity-60">
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            ) : (
+              <Badge variant={meta.variant} className="cursor-pointer gap-1 hover:opacity-80 transition-opacity">
+                <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+                {meta.label}
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </Badge>
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-40">
+          {STATUS_ORDER.map((status) => (
+            <DropdownMenuItem key={status} onClick={() => handleSelect(status)} className="gap-2">
+              <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_META[status].dot)} />
+              {STATUS_META[status].label}
+              {status === order.status && <Check className="ml-auto h-3.5 w-3.5 text-muted-foreground" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cancelar pedido</DialogTitle>
+            <DialogDescription>
+              Podés agregar una nota con el motivo — es opcional, se puede dejar en blanco.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={cancelNote}
+            onChange={(e) => setCancelNote(e.target.value)}
+            placeholder="Motivo de la cancelación (opcional)"
+            rows={3}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelOpen(false)}>
+              Volver
+            </Button>
+            <Button variant="destructive" onClick={confirmCancel} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Cancelando…' : 'Confirmar cancelación'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

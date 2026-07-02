@@ -41,7 +41,13 @@ export async function fetchOrder(id: string): Promise<OrderDetail> {
   return data as OrderDetail
 }
 
-export async function updateOrderStatus(id: string, status: OrderStatus): Promise<void> {
-  const { error } = await supabase.from('orders').update({ status }).eq('id', id)
+export async function updateOrderStatus(
+  id: string,
+  status: OrderStatus,
+  notes?: string | null,
+): Promise<void> {
+  const payload: OrderUpdate = { status }
+  if (notes !== undefined) payload.notes = notes
+  const { error } = await supabase.from('orders').update(payload).eq('id', id)
   if (error) throw error
 }
