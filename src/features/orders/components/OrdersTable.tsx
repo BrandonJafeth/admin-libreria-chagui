@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { ShoppingCart, Package, Loader2, Eye, Phone, ChevronDown, Check } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ShoppingCart, Package, Loader2, Eye, Phone, ChevronDown, Check, Pencil, Clock, CheckCircle2, XCircle, ListFilter } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -40,98 +40,144 @@ import { useUpdateOrderStatus } from '../hooks/useOrderMutations'
 import type { OrderListItem, OrderStatus } from '../api/orders.api'
 import { sileo } from 'sileo'
 
-type StatusFilter = 'pendiente' | 'all'
+type StatusFilter = 'all' | OrderStatus
 
-const STATUS_META: Record<OrderStatus, { label: string; variant: 'warning' | 'success' | 'destructive'; dot: string }> = {
-  pendiente: { label: 'Pendiente', variant: 'warning', dot: 'bg-accent-3' },
-  confirmado: { label: 'Confirmado', variant: 'success', dot: 'bg-green-500' },
-  cancelado: { label: 'Cancelado', variant: 'destructive', dot: 'bg-destructive' },
+const STATUS_META: Record<
+  OrderStatus,
+  { label: string; variant: 'warning' | 'success' | 'destructive'; dot: string; icon: typeof Clock }
+> = {
+  pendiente: { label: 'Pendiente', variant: 'warning', dot: 'bg-accent-3', icon: Clock },
+  confirmado: { label: 'Confirmado', variant: 'success', dot: 'bg-green-500', icon: CheckCircle2 },
+  cancelado: { label: 'Cancelado', variant: 'destructive', dot: 'bg-destructive', icon: XCircle },
 }
 const STATUS_ORDER: OrderStatus[] = ['pendiente', 'confirmado', 'cancelado']
 
-// ─── Status control (inline row dropdown + optional cancel note) ──────────────
+// ─── Status control (inline row dropdown + editable note) ─────────────────────
 
 function StatusSelect({ order }: { order: OrderListItem }) {
   const updateMutation = useUpdateOrderStatus()
-  const [cancelOpen, setCancelOpen] = useState(false)
-  const [cancelNote, setCancelNote] = useState('')
+  // null = editing the note only, keeping current status
+  const [pendingStatus, setPendingStatus] = useState<OrderStatus | null>(null)
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false)
+  const [noteDraft, setNoteDraft] = useState('')
 
   const busy = updateMutation.isPending && updateMutation.variables?.id === order.id
 
-  function applyStatus(status: OrderStatus, notes?: string) {
-    updateMutation.mutate(
-      { id: order.id, status, notes },
-      {
-        onSuccess: () => sileo.success({ title: 'Estado actualizado' }),
-        onError: (err) => sileo.error({ title: 'Error al actualizar estado', description: mapSupabaseError(err) }),
-      },
-    )
+  function openNoteDialog(status: OrderStatus | null) {
+    setPendingStatus(status)
+    setNoteDraft(order.notes ?? '')
+    setNoteDialogOpen(true)
   }
 
   function handleSelect(status: OrderStatus) {
     if (status === order.status) return
-    if (status === 'cancelado') {
-      setCancelNote('')
-      setCancelOpen(true)
-      return
-    }
-    applyStatus(status)
+    openNoteDialog(status)
   }
 
-  function confirmCancel() {
-    applyStatus('cancelado', cancelNote.trim() || undefined)
-    setCancelOpen(false)
+  function confirmChange() {
+    const targetStatus = pendingStatus ?? order.status
+    const trimmed = noteDraft.trim()
+    const noteUnchanged = trimmed === (order.notes ?? '').trim()
+
+    // Note-only edit with nothing actually changed: skip the write entirely.
+    if (pendingStatus === null && noteUnchanged) {
+      setNoteDialogOpen(false)
+      return
+    }
+
+    updateMutation.mutate(
+      { id: order.id, status: targetStatus, notes: trimmed === '' ? null : trimmed },
+      {
+        onSuccess: () => sileo.success({ title: pendingStatus ? 'Estado actualizado' : 'Motivo actualizado' }),
+        onError: (err) => sileo.error({ title: 'Error al actualizar', description: mapSupabaseError(err) }),
+      },
+    )
+    setNoteDialogOpen(false)
   }
 
   const meta = STATUS_META[order.status]
+  const isCancelTarget = pendingStatus === 'cancelado'
+  const hadStalePrevCancelNote = pendingStatus && pendingStatus !== 'cancelado' && order.status === 'cancelado' && !!order.notes
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild disabled={busy}>
-          <button type="button" disabled={busy} className="inline-flex items-center disabled:opacity-60">
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-            ) : (
-              <Badge variant={meta.variant} className="cursor-pointer gap-1 hover:opacity-80 transition-opacity">
-                <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
-                {meta.label}
-                <ChevronDown className="h-3 w-3 opacity-60" />
-              </Badge>
-            )}
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-40">
-          {STATUS_ORDER.map((status) => (
-            <DropdownMenuItem key={status} onClick={() => handleSelect(status)} className="gap-2">
-              <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_META[status].dot)} />
-              {STATUS_META[status].label}
-              {status === order.status && <Check className="ml-auto h-3.5 w-3.5 text-muted-foreground" />}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild disabled={busy}>
+            <button type="button" disabled={busy} className="inline-flex items-center disabled:opacity-60">
+              {busy ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              ) : (
+                <Badge variant={meta.variant} className="cursor-pointer gap-1 hover:opacity-80 transition-opacity">
+                  <span className={cn('h-1.5 w-1.5 rounded-full', meta.dot)} />
+                  {meta.label}
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </Badge>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-40">
+            {STATUS_ORDER.map((status) => (
+              <DropdownMenuItem key={status} onClick={() => handleSelect(status)} className="gap-2">
+                <span className={cn('h-1.5 w-1.5 rounded-full', STATUS_META[status].dot)} />
+                {STATUS_META[status].label}
+                {status === order.status && <Check className="ml-auto h-3.5 w-3.5 text-muted-foreground" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn('h-6 w-6 hover:text-foreground', order.notes ? 'text-accent-3' : 'text-muted-foreground/60')}
+          title={order.notes ? `Nota: ${order.notes}` : 'Agregar motivo/nota'}
+          disabled={busy}
+          onClick={() => openNoteDialog(null)}
+        >
+          <Pencil className="h-3 w-3" />
+        </Button>
+      </div>
+
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Cancelar pedido</DialogTitle>
+            <DialogTitle>
+              {isCancelTarget
+                ? 'Cancelar pedido'
+                : pendingStatus
+                  ? `Cambiar a "${STATUS_META[pendingStatus].label}"`
+                  : order.notes
+                    ? 'Editar motivo / nota'
+                    : 'Agregar motivo / nota'}
+            </DialogTitle>
             <DialogDescription>
-              Podés agregar una nota con el motivo — es opcional, se puede dejar en blanco.
+              {isCancelTarget
+                ? 'Podés agregar el motivo de la cancelación — es opcional.'
+                : 'Nota interna sobre el pedido — opcional, se puede dejar en blanco.'}
             </DialogDescription>
           </DialogHeader>
+          {hadStalePrevCancelNote && (
+            <p className="text-xs text-accent-3 bg-accent-3/10 rounded-md px-2.5 py-1.5">
+              Este pedido tenía un motivo de cancelación anterior. Actualizalo o borralo si ya no aplica.
+            </p>
+          )}
           <Textarea
-            value={cancelNote}
-            onChange={(e) => setCancelNote(e.target.value)}
-            placeholder="Motivo de la cancelación (opcional)"
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            placeholder={isCancelTarget ? 'Motivo de la cancelación (opcional)' : 'Nota (opcional)'}
             rows={3}
           />
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCancelOpen(false)}>
+            <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>
               Volver
             </Button>
-            <Button variant="destructive" onClick={confirmCancel} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'Cancelando…' : 'Confirmar cancelación'}
+            <Button
+              variant={isCancelTarget ? 'destructive' : 'default'}
+              onClick={confirmChange}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? 'Guardando…' : isCancelTarget ? 'Confirmar cancelación' : 'Guardar'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -144,6 +190,33 @@ function StatusSelect({ order }: { order: OrderListItem }) {
 
 function OrderDetailSheet({ orderId, onOpenChange }: { orderId: string | null; onOpenChange: (open: boolean) => void }) {
   const { data: order, isLoading, error } = useOrder(orderId ?? '', !!orderId)
+  const updateMutation = useUpdateOrderStatus()
+  const [editingNote, setEditingNote] = useState(false)
+  const [noteDraft, setNoteDraft] = useState('')
+
+  useEffect(() => setEditingNote(false), [orderId])
+
+  function startEditNote() {
+    setNoteDraft(order?.notes ?? '')
+    setEditingNote(true)
+  }
+
+  function saveNote() {
+    if (!order) return
+    const trimmed = noteDraft.trim()
+    if (trimmed === (order.notes ?? '').trim()) {
+      setEditingNote(false)
+      return
+    }
+    updateMutation.mutate(
+      { id: order.id, status: order.status, notes: trimmed === '' ? null : trimmed },
+      {
+        onSuccess: () => sileo.success({ title: 'Motivo actualizado' }),
+        onError: (err) => sileo.error({ title: 'Error al actualizar', description: mapSupabaseError(err) }),
+      },
+    )
+    setEditingNote(false)
+  }
 
   return (
     <Sheet open={!!orderId} onOpenChange={onOpenChange}>
@@ -171,8 +244,41 @@ function OrderDetailSheet({ orderId, onOpenChange }: { orderId: string | null; o
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Phone className="h-3 w-3" /> {order.customer_phone}
                 </p>
-                {order.notes && (
-                  <p className="text-xs text-muted-foreground mt-1.5 italic">{order.notes}</p>
+
+                {editingNote ? (
+                  <div className="mt-2 space-y-2">
+                    <Textarea
+                      autoFocus
+                      value={noteDraft}
+                      onChange={(e) => setNoteDraft(e.target.value)}
+                      placeholder="Motivo / nota (opcional)"
+                      rows={3}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setEditingNote(false)}>
+                        Cancelar
+                      </Button>
+                      <Button size="sm" onClick={saveNote} disabled={updateMutation.isPending}>
+                        {updateMutation.isPending ? 'Guardando…' : 'Guardar'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-1.5 flex items-start justify-between gap-2">
+                    {order.notes ? (
+                      <p className="text-xs text-muted-foreground italic">{order.notes}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground/50 italic">Sin motivo/nota</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={startEditNote}
+                      className="shrink-0 text-muted-foreground/60 hover:text-foreground"
+                      title={order.notes ? 'Editar nota' : 'Agregar nota'}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -209,11 +315,19 @@ export function OrdersTable() {
   const [filter, setFilter] = useState<StatusFilter>('pendiente')
   const [viewingId, setViewingId] = useState<string | null>(null)
 
-  const { data: orders, isLoading, error } = useOrders(
-    filter === 'pendiente' ? { status: 'pendiente' } : undefined,
-  )
+  // Fetch everything once; filter client-side so tab counts stay accurate for all statuses at once.
+  const { data: allOrders, isLoading, error } = useOrders()
 
-  const pendingCount = orders?.filter((o) => o.status === 'pendiente').length ?? 0
+  const counts = useMemo(() => {
+    const base: Record<StatusFilter, number> = { all: allOrders?.length ?? 0, pendiente: 0, confirmado: 0, cancelado: 0 }
+    for (const o of allOrders ?? []) base[o.status]++
+    return base
+  }, [allOrders])
+
+  const orders = useMemo(
+    () => (filter === 'all' ? allOrders : allOrders?.filter((o) => o.status === filter)),
+    [allOrders, filter],
+  )
 
   return (
     <div className="space-y-6">
@@ -233,34 +347,51 @@ export function OrdersTable() {
           </div>
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/30 p-1">
-          <button
-            onClick={() => setFilter('pendiente')}
-            className={cn(
-              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-              filter === 'pendiente'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            Pendientes
-            {pendingCount > 0 && filter !== 'pendiente' && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-white">
-                {pendingCount > 9 ? '9+' : pendingCount}
-              </span>
-            )}
-          </button>
+        {/* Filter tabs — one per status so it's clear at a glance what's shown */}
+        <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/30 p-1 overflow-x-auto">
+          {STATUS_ORDER.map((status) => {
+            const meta = STATUS_META[status]
+            const Icon = meta.icon
+            const active = filter === status
+            return (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={cn(
+                  'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                  active ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                <Icon className={cn('h-3.5 w-3.5', active ? 'text-accent' : 'text-muted-foreground/60')} />
+                {meta.label}s
+                <span
+                  className={cn(
+                    'flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold',
+                    active ? 'bg-accent text-white' : 'bg-muted-foreground/15 text-muted-foreground',
+                  )}
+                >
+                  {counts[status]}
+                </span>
+              </button>
+            )
+          })}
           <button
             onClick={() => setFilter('all')}
             className={cn(
-              'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-              filter === 'all'
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
+              'flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+              filter === 'all' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
             )}
           >
+            <ListFilter className={cn('h-3.5 w-3.5', filter === 'all' ? 'text-accent' : 'text-muted-foreground/60')} />
             Todos
+            <span
+              className={cn(
+                'flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold',
+                filter === 'all' ? 'bg-accent text-white' : 'bg-muted-foreground/15 text-muted-foreground',
+              )}
+            >
+              {counts.all}
+            </span>
           </button>
         </div>
       </div>
@@ -283,7 +414,7 @@ export function OrdersTable() {
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <ShoppingCart className="h-10 w-10 text-muted-foreground/30 mb-3" />
           <p className="text-muted-foreground text-sm font-medium">
-            {filter === 'pendiente' ? 'Sin pedidos pendientes' : 'Sin pedidos aún'}
+            {filter === 'all' ? 'Sin pedidos aún' : `Sin pedidos ${STATUS_META[filter].label.toLowerCase()}s`}
           </p>
           <p className="text-muted-foreground/60 text-xs mt-1">
             Los pedidos hechos desde el carrito del sitio van a aparecer acá.
