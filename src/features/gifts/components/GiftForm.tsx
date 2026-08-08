@@ -35,6 +35,9 @@ const schema = z
     fecha_fin: z.string().nullable().optional(),
   })
   .superRefine((val, ctx) => {
+    // product_gifts tiene CHECK (producto_disparador_id <> producto_regalo_id) en DB
+    // (supabase/migrations/20260807000000_discounts_bundles_gifts.sql) — validar acá
+    // también para no dejar que el usuario llegue a un error crudo de Postgres.
     if (val.producto_disparador_id && val.producto_disparador_id === val.producto_regalo_id) {
       ctx.addIssue({ code: 'custom', path: ['producto_regalo_id'], message: 'Debe ser distinto al producto disparador' })
     }

@@ -214,7 +214,11 @@
   height: 0;
 }
 
-/* Sileo toasts above sheets (z-50) */
+/* Sileo toasts above sheets/dialogs (z-50) and their Radix focus-trap overlay.
+   !important: forces this above any inline/portal z-index sileo or a future
+   modal might set — z-index alone proved insufficient here. */
 [data-sileo-viewport] {
-  z-index: 200;
+  position: fixed !important;
+  z-index: 999 !important;
+  pointer-events: auto !important;
 }

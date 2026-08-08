@@ -2,7 +2,16 @@ import { Dialog as DialogPrimitive } from 'radix-ui'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const Sheet = DialogPrimitive.Root
+function Sheet({ modal = false, ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  // modal=false by default: Radix's modal scroll-lock blocks wheel/touch on anything
+  // outside the Sheet's own DOM subtree — including Popover/Select content, which
+  // portals to document.body as a sibling, not a descendant. That silently breaks
+  // mouse-wheel scrolling in ProductPicker, category selects, etc. whenever they're
+  // opened from inside a Sheet. Outside-click-to-close is already handled separately
+  // by SheetContent's onPointerDownOutside/onInteractOutside, so we don't need the
+  // stricter modal behavior here.
+  return <DialogPrimitive.Root modal={modal} {...props} />
+}
 const SheetTrigger = DialogPrimitive.Trigger
 const SheetClose = DialogPrimitive.Close
 const SheetPortal = DialogPrimitive.Portal

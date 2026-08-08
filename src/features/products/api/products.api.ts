@@ -80,6 +80,32 @@ export interface ProductSearchResult {
   id: string
   nombre: string
   precio: number
+  estado: 'disponible' | 'agotado'
+  tipo: 'simple' | 'paquete'
+  imageUrl?: string
+}
+
+const SEARCH_SELECT = 'id, nombre, precio, estado, tipo, product_images(url, es_principal)'
+
+type SearchRow = {
+  id: string
+  nombre: string
+  precio: number
+  estado: 'disponible' | 'agotado'
+  tipo: 'simple' | 'paquete'
+  product_images: { url: string; es_principal: boolean }[]
+}
+
+function mapSearchRow(row: SearchRow): ProductSearchResult {
+  const image = row.product_images.find((i) => i.es_principal) ?? row.product_images[0]
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    precio: row.precio,
+    estado: row.estado,
+    tipo: row.tipo,
+    imageUrl: image?.url,
+  }
 }
 
 export async function searchProducts(
@@ -89,7 +115,7 @@ export async function searchProducts(
   if (!q.trim()) return []
   let query = supabase
     .from('products')
-    .select('id, nombre, precio')
+    .select(SEARCH_SELECT)
     .ilike('nombre', `%${q.trim()}%`)
   if (opts?.excludeTipo) query = query.neq('tipo', opts.excludeTipo)
   // Excluir en el query, no después del límite — si no, un producto válido más allá
@@ -99,14 +125,14 @@ export async function searchProducts(
   }
   const { data, error } = await query.order('nombre', { ascending: true }).limit(20)
   if (error) throw error
-  return data
+  return (data as SearchRow[]).map(mapSearchRow)
 }
 
 export async function fetchProductsByIds(ids: string[]): Promise<ProductSearchResult[]> {
   if (ids.length === 0) return []
-  const { data, error } = await supabase.from('products').select('id, nombre, precio').in('id', ids)
+  const { data, error } = await supabase.from('products').select(SEARCH_SELECT).in('id', ids)
   if (error) throw error
-  return data
+  return (data as SearchRow[]).map(mapSearchRow)
 }
 
 export async function fetchProduct(id: string): Promise<ProductDetail> {
@@ -308,6 +334,11 @@ export async function addBundleItem(
     cantidad,
     orden,
   })
+  if (error) throw error
+}
+
+export async function updateBundleItem(id: string, cantidad: number): Promise<void> {
+  const { error } = await supabase.from('product_bundle_items').update({ cantidad }).eq('id', id)
   if (error) throw error
 }
 

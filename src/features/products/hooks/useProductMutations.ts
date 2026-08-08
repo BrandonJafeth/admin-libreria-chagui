@@ -12,6 +12,7 @@ import {
   upsertProductColor,
   deleteProductColor,
   addBundleItem,
+  updateBundleItem,
   deleteBundleItem,
   type ProductInsert,
   type ProductUpdate,
@@ -170,6 +171,14 @@ export function useAddBundleItem(paqueteId: string) {
   return useMutation({
     mutationFn: ({ productoId, cantidad, orden }: { productoId: string; cantidad: number; orden: number }) =>
       addBundleItem(paqueteId, productoId, cantidad, orden),
+    onSuccess: () => qc.invalidateQueries({ queryKey: productQueryKey(paqueteId) }),
+  })
+}
+
+export function useUpdateBundleItem(paqueteId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, cantidad }: { id: string; cantidad: number }) => updateBundleItem(id, cantidad),
     onSuccess: () => qc.invalidateQueries({ queryKey: productQueryKey(paqueteId) }),
   })
 }
