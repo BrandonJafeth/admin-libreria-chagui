@@ -6,6 +6,7 @@ import {
   Users,
   MessageSquare,
   ShoppingCart,
+  Gift,
   ChevronLeft,
   ChevronRight,
   X,
@@ -28,6 +29,7 @@ const baseNavGroups = [
     items: [
       { to: '/productos' as const, icon: Package, label: 'Productos', exact: false },
       { to: '/categorias' as const, icon: Tag, label: 'Categorías', exact: false },
+      { to: '/regalias' as const, icon: Gift, label: 'Regalías', exact: false },
       { to: '/pedidos' as const, icon: ShoppingCart, label: 'Pedidos', exact: false },
       { to: '/resenas' as const, icon: MessageSquare, label: 'Reseñas', exact: false },
     ],

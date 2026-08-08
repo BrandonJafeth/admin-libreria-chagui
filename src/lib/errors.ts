@@ -18,9 +18,10 @@ function extractCode(error: unknown): string {
   return ''
 }
 
-// In this app any authenticated user has full write access (no per-role RLS on writes),
-// so an RLS violation on insert/update only happens when the JWT is missing/expired —
-// treat it as a session error, not a generic permission error.
+// Historically any authenticated user had full write access (no per-role RLS), so an RLS
+// violation meant "session expired" almost always. That's no longer universally true —
+// product_gifts, product_bundle_items and orders (DELETE) are now admin-only — but session
+// expiry is still by far the most common cause, so it stays the default assumption here.
 export function isSessionError(error: unknown): boolean {
   const msg = extractMessage(error).toLowerCase()
   const code = extractCode(error)

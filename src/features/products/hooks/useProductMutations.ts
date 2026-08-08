@@ -11,6 +11,8 @@ import {
   reorderProductImages,
   upsertProductColor,
   deleteProductColor,
+  addBundleItem,
+  deleteBundleItem,
   type ProductInsert,
   type ProductUpdate,
   type ProductsPage,
@@ -160,5 +162,22 @@ export function useDeleteProductColor(productId: string) {
   return useMutation({
     mutationFn: (colorId: string) => deleteProductColor(colorId),
     onSuccess: () => qc.invalidateQueries({ queryKey: productQueryKey(productId) }),
+  })
+}
+
+export function useAddBundleItem(paqueteId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ productoId, cantidad, orden }: { productoId: string; cantidad: number; orden: number }) =>
+      addBundleItem(paqueteId, productoId, cantidad, orden),
+    onSuccess: () => qc.invalidateQueries({ queryKey: productQueryKey(paqueteId) }),
+  })
+}
+
+export function useDeleteBundleItem(paqueteId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteBundleItem(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: productQueryKey(paqueteId) }),
   })
 }

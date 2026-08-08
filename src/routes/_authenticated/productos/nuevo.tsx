@@ -28,6 +28,13 @@ function NuevoProductoPage() {
           descripcion: product.descripcion,
           estado: product.estado,
           destacado: product.destacado,
+          tipo: product.tipo,
+          descuento_tipo: product.descuento_tipo,
+          precio_oferta: product.precio_oferta,
+          descuento_porcentaje: product.descuento_porcentaje,
+          descuento_activo: product.descuento_activo,
+          descuento_inicio: product.descuento_inicio,
+          descuento_fin: product.descuento_fin,
         },
         categoryIds: category_ids,
       })

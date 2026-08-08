@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ShoppingCart, Package, Loader2, Eye, Phone, ChevronDown, Check, Pencil, Clock, CheckCircle2, XCircle, ListFilter } from 'lucide-react'
+import { useRouteContext } from '@tanstack/react-router'
+import { ShoppingCart, Package, Loader2, Eye, Phone, ChevronDown, Check, Pencil, Clock, CheckCircle2, XCircle, ListFilter, Trash2 } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -33,10 +34,11 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { formatPrice, cn } from '@/lib/utils'
 import { mapSupabaseError } from '@/lib/errors'
 import { useOrders, useOrder } from '../hooks/useOrders'
-import { useUpdateOrderStatus } from '../hooks/useOrderMutations'
+import { useUpdateOrderStatus, useDeleteOrder } from '../hooks/useOrderMutations'
 import type { OrderListItem, OrderStatus } from '../api/orders.api'
 import { sileo } from 'sileo'
 
@@ -312,11 +314,26 @@ function OrderDetailSheet({ orderId, onOpenChange }: { orderId: string | null; o
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function OrdersTable() {
+  const { userRole } = useRouteContext({ from: '/_authenticated' })
+  const isAdmin = userRole === 'admin'
   const [filter, setFilter] = useState<StatusFilter>('pendiente')
   const [viewingId, setViewingId] = useState<string | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   // Fetch everything once; filter client-side so tab counts stay accurate for all statuses at once.
   const { data: allOrders, isLoading, error } = useOrders()
+  const deleteMutation = useDeleteOrder()
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return
+    try {
+      await deleteMutation.mutateAsync(pendingDeleteId)
+      setPendingDeleteId(null)
+      sileo.success({ title: 'Pedido eliminado' })
+    } catch (err) {
+      sileo.error({ title: 'Error al eliminar', description: mapSupabaseError(err) })
+    }
+  }
 
   const counts = useMemo(() => {
     const base: Record<StatusFilter, number> = { all: allOrders?.length ?? 0, pendiente: 0, confirmado: 0, cancelado: 0 }
@@ -469,10 +486,21 @@ export function OrdersTable() {
                       <StatusSelect order={order} />
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-end">
+                      <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => setViewingId(order.id)} title="Ver detalle">
                           <Eye className="h-4 w-4" />
                         </Button>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setPendingDeleteId(order.id)}
+                            className="text-destructive hover:text-destructive"
+                            title="Eliminar pedido"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -484,6 +512,15 @@ export function OrdersTable() {
       )}
 
       <OrderDetailSheet orderId={viewingId} onOpenChange={(o) => !o && setViewingId(null)} />
+
+      <ConfirmDialog
+        open={!!pendingDeleteId}
+        onOpenChange={(o) => !o && setPendingDeleteId(null)}
+        title={`¿Eliminar el pedido de "${allOrders?.find((o) => o.id === pendingDeleteId)?.customer_name ?? ''}"?`}
+        description="Esta acción no se puede deshacer."
+        onConfirm={confirmDelete}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }

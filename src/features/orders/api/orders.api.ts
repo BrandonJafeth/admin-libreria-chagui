@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client'
+import { supabase, assertDeleted } from '@/lib/supabase/client'
 import type { Tables, Updatable } from '@/types/database.types'
 
 export type Order = Tables<'orders'>
@@ -50,4 +50,10 @@ export async function updateOrderStatus(
   if (notes !== undefined) payload.notes = notes
   const { error } = await supabase.from('orders').update(payload).eq('id', id)
   if (error) throw error
+}
+
+export async function deleteOrder(id: string): Promise<void> {
+  const { data, error } = await supabase.from('orders').delete().eq('id', id).select('id')
+  if (error) throw error
+  assertDeleted(data, 'el pedido')
 }

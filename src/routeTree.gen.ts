@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosIndexRouteImport } from './routes/_authenticated/usuarios/index'
 import { Route as AuthenticatedResenasIndexRouteImport } from './routes/_authenticated/resenas/index'
+import { Route as AuthenticatedRegaliasIndexRouteImport } from './routes/_authenticated/regalias/index'
 import { Route as AuthenticatedProductosIndexRouteImport } from './routes/_authenticated/productos/index'
 import { Route as AuthenticatedPedidosIndexRouteImport } from './routes/_authenticated/pedidos/index'
 import { Route as AuthenticatedCategoriasIndexRouteImport } from './routes/_authenticated/categorias/index'
@@ -50,6 +51,12 @@ const AuthenticatedResenasIndexRoute =
   AuthenticatedResenasIndexRouteImport.update({
     id: '/resenas/',
     path: '/resenas/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedRegaliasIndexRoute =
+  AuthenticatedRegaliasIndexRouteImport.update({
+    id: '/regalias/',
+    path: '/regalias/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedProductosIndexRoute =
@@ -92,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/categorias/': typeof AuthenticatedCategoriasIndexRoute
   '/pedidos/': typeof AuthenticatedPedidosIndexRoute
   '/productos/': typeof AuthenticatedProductosIndexRoute
+  '/regalias/': typeof AuthenticatedRegaliasIndexRoute
   '/resenas/': typeof AuthenticatedResenasIndexRoute
   '/usuarios/': typeof AuthenticatedUsuariosIndexRoute
 }
@@ -104,6 +112,7 @@ export interface FileRoutesByTo {
   '/categorias': typeof AuthenticatedCategoriasIndexRoute
   '/pedidos': typeof AuthenticatedPedidosIndexRoute
   '/productos': typeof AuthenticatedProductosIndexRoute
+  '/regalias': typeof AuthenticatedRegaliasIndexRoute
   '/resenas': typeof AuthenticatedResenasIndexRoute
   '/usuarios': typeof AuthenticatedUsuariosIndexRoute
 }
@@ -118,6 +127,7 @@ export interface FileRoutesById {
   '/_authenticated/categorias/': typeof AuthenticatedCategoriasIndexRoute
   '/_authenticated/pedidos/': typeof AuthenticatedPedidosIndexRoute
   '/_authenticated/productos/': typeof AuthenticatedProductosIndexRoute
+  '/_authenticated/regalias/': typeof AuthenticatedRegaliasIndexRoute
   '/_authenticated/resenas/': typeof AuthenticatedResenasIndexRoute
   '/_authenticated/usuarios/': typeof AuthenticatedUsuariosIndexRoute
 }
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/categorias/'
     | '/pedidos/'
     | '/productos/'
+    | '/regalias/'
     | '/resenas/'
     | '/usuarios/'
   fileRoutesByTo: FileRoutesByTo
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/categorias'
     | '/pedidos'
     | '/productos'
+    | '/regalias'
     | '/resenas'
     | '/usuarios'
   id:
@@ -157,6 +169,7 @@ export interface FileRouteTypes {
     | '/_authenticated/categorias/'
     | '/_authenticated/pedidos/'
     | '/_authenticated/productos/'
+    | '/_authenticated/regalias/'
     | '/_authenticated/resenas/'
     | '/_authenticated/usuarios/'
   fileRoutesById: FileRoutesById
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedResenasIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/regalias/': {
+      id: '/_authenticated/regalias/'
+      path: '/regalias'
+      fullPath: '/regalias/'
+      preLoaderRoute: typeof AuthenticatedRegaliasIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/productos/': {
       id: '/_authenticated/productos/'
       path: '/productos'
@@ -256,6 +276,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCategoriasIndexRoute: typeof AuthenticatedCategoriasIndexRoute
   AuthenticatedPedidosIndexRoute: typeof AuthenticatedPedidosIndexRoute
   AuthenticatedProductosIndexRoute: typeof AuthenticatedProductosIndexRoute
+  AuthenticatedRegaliasIndexRoute: typeof AuthenticatedRegaliasIndexRoute
   AuthenticatedResenasIndexRoute: typeof AuthenticatedResenasIndexRoute
   AuthenticatedUsuariosIndexRoute: typeof AuthenticatedUsuariosIndexRoute
 }
@@ -267,6 +288,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCategoriasIndexRoute: AuthenticatedCategoriasIndexRoute,
   AuthenticatedPedidosIndexRoute: AuthenticatedPedidosIndexRoute,
   AuthenticatedProductosIndexRoute: AuthenticatedProductosIndexRoute,
+  AuthenticatedRegaliasIndexRoute: AuthenticatedRegaliasIndexRoute,
   AuthenticatedResenasIndexRoute: AuthenticatedResenasIndexRoute,
   AuthenticatedUsuariosIndexRoute: AuthenticatedUsuariosIndexRoute,
 }

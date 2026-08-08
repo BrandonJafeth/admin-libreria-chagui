@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client'
+import { supabase, assertDeleted } from '@/lib/supabase/client'
 import type { Tables } from '@/types/database.types'
 
 export type Review = Tables<'product_reviews'>
@@ -33,6 +33,7 @@ export async function approveReview(id: string): Promise<void> {
 }
 
 export async function deleteReview(id: string): Promise<void> {
-  const { error } = await supabase.from('product_reviews').delete().eq('id', id)
+  const { data, error } = await supabase.from('product_reviews').delete().eq('id', id).select('id')
   if (error) throw error
+  assertDeleted(data, 'la reseña')
 }

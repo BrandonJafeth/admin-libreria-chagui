@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client'
+import { supabase, assertDeleted } from '@/lib/supabase/client'
 import type { Tables, Insertable, Updatable } from '@/types/database.types'
 
 export type Category = Tables<'categories'>
@@ -48,8 +48,9 @@ export async function fetchCategoryProductCount(categoryId: string): Promise<num
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const { error } = await supabase.from('categories').delete().eq('id', id)
+  const { data, error } = await supabase.from('categories').delete().eq('id', id).select('id')
   if (error) throw error
+  assertDeleted(data, 'la categoría')
 }
 
 export async function reorderCategories(

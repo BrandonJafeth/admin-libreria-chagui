@@ -2,7 +2,6 @@ import { useState, useRef } from 'react'
 import { Plus, Trash2, Pipette, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   useUpsertProductColor,
   useDeleteProductColor,
@@ -78,8 +77,6 @@ export function ColorPicker({ productId, colors }: ColorPickerProps) {
 
   return (
     <div className="space-y-3">
-      <Label>Colores</Label>
-
       {colors.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {colors.map((color) => (

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Package,
+  Boxes,
   Plus,
   Search,
   Star,
@@ -18,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 import { Pagination } from '@/components/ui/pagination'
 import {
   Table,
@@ -47,7 +48,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ProductForm, type ProductFormValues } from './ProductForm'
 import { ImageUploader } from './ImageUploader'
 import { ColorPicker } from './ColorPicker'
+import { BundleItemsPicker } from './BundleItemsPicker'
 import { formatPrice } from '@/lib/utils'
+import { precioFinal, enOferta } from '@/lib/pricing'
 import { mapSupabaseError } from '@/lib/errors'
 import { useRouteContext } from '@tanstack/react-router'
 import { sileo } from 'sileo'
@@ -78,6 +81,8 @@ export function ProductTable() {
   const [debouncedQ, setDebouncedQ] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<'todos' | 'disponible' | 'agotado'>('todos')
   const [destacadoFilter, setDestacadoFilter] = useState<'todos' | 'si' | 'no'>('todos')
+  const [tipoFilter, setTipoFilter] = useState<'todos' | 'simple' | 'paquete'>('todos')
+  const [descuentoFilter, setDescuentoFilter] = useState<'todos' | 'si' | 'no'>('todos')
   const [categoryFilter, setCategoryFilter] = useState<string>('todas')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [page, setPage] = useState(1)
@@ -97,12 +102,14 @@ export function ProductTable() {
   // Reset to page 1 on any filter or page size change
   useEffect(() => {
     setPage(1)
-  }, [debouncedQ, estadoFilter, destacadoFilter, categoryFilter, pageSize])
+  }, [debouncedQ, estadoFilter, destacadoFilter, tipoFilter, descuentoFilter, categoryFilter, pageSize])
 
   const { data, isLoading, error } = useProducts({
     q: debouncedQ || undefined,
     estado: estadoFilter !== 'todos' ? estadoFilter : undefined,
     destacado: destacadoFilter !== 'todos' ? destacadoFilter === 'si' : undefined,
+    tipo: tipoFilter !== 'todos' ? tipoFilter : undefined,
+    conDescuento: descuentoFilter !== 'todos' ? descuentoFilter === 'si' : undefined,
     categoryId: categoryFilter !== 'todas' ? categoryFilter : undefined,
     page,
     pageSize,
@@ -116,16 +123,20 @@ export function ProductTable() {
   const deleteMutation = useDeleteProduct()
 
   const hasFilters =
-    estadoFilter !== 'todos' || destacadoFilter !== 'todos' || categoryFilter !== 'todas'
+    estadoFilter !== 'todos' || destacadoFilter !== 'todos' || tipoFilter !== 'todos' || descuentoFilter !== 'todos' || categoryFilter !== 'todas'
   const activeFilterCount = [
     estadoFilter !== 'todos',
     destacadoFilter !== 'todos',
+    tipoFilter !== 'todos',
+    descuentoFilter !== 'todos',
     categoryFilter !== 'todas',
   ].filter(Boolean).length
 
   function clearFilters() {
     setEstadoFilter('todos')
     setDestacadoFilter('todos')
+    setTipoFilter('todos')
+    setDescuentoFilter('todos')
     setCategoryFilter('todas')
   }
 
@@ -140,6 +151,13 @@ export function ProductTable() {
           descripcion: product.descripcion,
           estado: product.estado,
           destacado: product.destacado,
+          tipo: product.tipo,
+          descuento_tipo: product.descuento_tipo,
+          precio_oferta: product.precio_oferta,
+          descuento_porcentaje: product.descuento_porcentaje,
+          descuento_activo: product.descuento_activo,
+          descuento_inicio: product.descuento_inicio,
+          descuento_fin: product.descuento_fin,
         },
         categoryIds: category_ids,
       })
@@ -316,6 +334,46 @@ export function ProductTable() {
             </SelectContent>
           </Select>
 
+          <Select
+            value={tipoFilter}
+            onValueChange={(v) => setTipoFilter(v as typeof tipoFilter)}
+          >
+            <SelectTrigger
+              className={`h-8 w-auto gap-1.5 rounded-full px-3 text-xs ${
+                tipoFilter !== 'todos'
+                  ? 'border-accent text-accent bg-accent/5'
+                  : 'border-border text-muted-foreground'
+              }`}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Tipo</SelectItem>
+              <SelectItem value="simple">Producto simple</SelectItem>
+              <SelectItem value="paquete">Paquete</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={descuentoFilter}
+            onValueChange={(v) => setDescuentoFilter(v as typeof descuentoFilter)}
+          >
+            <SelectTrigger
+              className={`h-8 w-auto gap-1.5 rounded-full px-3 text-xs ${
+                descuentoFilter !== 'todos'
+                  ? 'border-accent text-accent bg-accent/5'
+                  : 'border-border text-muted-foreground'
+              }`}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Descuento</SelectItem>
+              <SelectItem value="si">Con descuento</SelectItem>
+              <SelectItem value="no">Sin descuento</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger
               className={`h-8 w-auto gap-1.5 rounded-full px-3 text-xs ${
@@ -392,6 +450,34 @@ export function ProductTable() {
                 <SelectItem value="todos">Todos</SelectItem>
                 <SelectItem value="si">Destacados</SelectItem>
                 <SelectItem value="no">No destacados</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={tipoFilter}
+              onValueChange={(v) => setTipoFilter(v as typeof tipoFilter)}
+            >
+              <SelectTrigger className="w-full text-sm">
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los tipos</SelectItem>
+                <SelectItem value="simple">Producto simple</SelectItem>
+                <SelectItem value="paquete">Paquete</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={descuentoFilter}
+              onValueChange={(v) => setDescuentoFilter(v as typeof descuentoFilter)}
+            >
+              <SelectTrigger className="w-full text-sm">
+                <SelectValue placeholder="Descuento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="si">Con descuento</SelectItem>
+                <SelectItem value="no">Sin descuento</SelectItem>
               </SelectContent>
             </Select>
 
@@ -613,9 +699,25 @@ function ProductCard({ product, mainImageUrl, onEdit, onDelete, isDeleting, isAd
       </div>
 
       <div className="px-3 pt-2.5 pb-1 flex flex-col gap-1.5">
-        <p className="text-sm font-medium leading-tight line-clamp-2 min-h-10">{product.nombre}</p>
+        <div className="flex items-start gap-1.5">
+          <p className="text-sm font-medium leading-tight line-clamp-2 min-h-10 flex-1">{product.nombre}</p>
+          {product.tipo === 'paquete' && (
+            <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0 gap-1">
+              <Boxes className="h-2.5 w-2.5" />
+              Paquete
+            </Badge>
+          )}
+        </div>
         <div className="flex items-center justify-between gap-1">
-          <span className="text-sm font-semibold text-accent">{formatPrice(product.precio)}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-semibold text-accent">{formatPrice(precioFinal(product))}</span>
+            {enOferta(product) && (
+              <>
+                <span className="text-[11px] text-muted-foreground line-through">{formatPrice(product.precio)}</span>
+                <Badge variant="info" className="text-[10px] px-1.5 py-0">Oferta</Badge>
+              </>
+            )}
+          </div>
           <button
             onClick={() =>
               toggleEstadoMutation.mutate(
@@ -693,10 +795,28 @@ function ProductTableRow({ product, mainImageUrl, onEdit, onDelete, isDeleting, 
         )}
       </TableCell>
       <TableCell>
-        <span className="font-medium">{product.nombre}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium">{product.nombre}</span>
+          {product.tipo === 'paquete' && (
+            <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0 gap-1">
+              <Boxes className="h-2.5 w-2.5" />
+              Paquete
+            </Badge>
+          )}
+        </div>
         <span className="block text-xs font-mono text-muted-foreground">{product.slug}</span>
       </TableCell>
-      <TableCell className="font-semibold text-accent">{formatPrice(product.precio)}</TableCell>
+      <TableCell className="font-semibold text-accent">
+        <div className="flex items-center gap-1.5">
+          {formatPrice(precioFinal(product))}
+          {enOferta(product) && (
+            <>
+              <span className="text-xs font-normal text-muted-foreground line-through">{formatPrice(product.precio)}</span>
+              <Badge variant="info" className="text-[10px] px-1.5 py-0">Oferta</Badge>
+            </>
+          )}
+        </div>
+      </TableCell>
       <TableCell>
         <Badge
           variant={product.estado === 'disponible' ? 'success' : 'warning'}
@@ -752,6 +872,8 @@ interface ProductEditSheetProps {
 }
 
 function ProductEditSheet({ productId, open, onOpenChange }: ProductEditSheetProps) {
+  const { userRole } = useRouteContext({ from: '/_authenticated' })
+  const isAdmin = userRole === 'admin'
   const { data: product, isLoading, error } = useQuery({
     queryKey: productQueryKey(productId),
     queryFn: () => fetchProduct(productId),
@@ -790,54 +912,80 @@ function ProductEditSheet({ productId, open, onOpenChange }: ProductEditSheetPro
           ) : error ? (
             <p className="text-sm text-destructive">Error cargando producto: {mapSupabaseError(error)}</p>
           ) : product ? (
-            <>
-              <section>
-                <SectionLabel icon={<Info className="h-3.5 w-3.5" />} title="Información" />
-                <ProductForm
-                  defaultValues={{
-                    ...product,
-                    category_ids: product.product_categories.map((pc) => pc.category_id),
-                  }}
-                  onSubmit={handleSubmit}
-                  onCancel={() => onOpenChange(false)}
-                  isLoading={updateMutation.isPending}
-                  submitLabel="Actualizar"
-                />
-                {updateMutation.isError && (
-                  <p className="text-sm text-destructive mt-2">{mapSupabaseError(updateMutation.error)}</p>
-                )}
-              </section>
+            <Accordion type="single" collapsible defaultValue="info">
+              <AccordionItem value="info">
+                <AccordionTrigger>
+                  <span className="flex items-center gap-2">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                    Información
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <ProductForm
+                    defaultValues={{
+                      ...product,
+                      category_ids: product.product_categories.map((pc) => pc.category_id),
+                    }}
+                    onSubmit={handleSubmit}
+                    onCancel={() => onOpenChange(false)}
+                    isLoading={updateMutation.isPending}
+                    submitLabel="Actualizar"
+                    bundleItemsCount={product.product_bundle_items.length}
+                  />
+                  {updateMutation.isError && (
+                    <p className="text-sm text-destructive mt-2">{mapSupabaseError(updateMutation.error)}</p>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
 
-              <Separator />
+              <AccordionItem value="imagenes">
+                <AccordionTrigger>
+                  <span className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                    Imágenes
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <ImageUploader
+                    productId={productId}
+                    images={product.product_images}
+                    colorsCount={product.product_colors.length}
+                  />
+                </AccordionContent>
+              </AccordionItem>
 
-              <section>
-                <SectionLabel icon={<ImageIcon className="h-3.5 w-3.5" />} title="Imágenes" />
-                <ImageUploader
-                  productId={productId}
-                  images={product.product_images}
-                  colorsCount={product.product_colors.length}
-                />
-              </section>
+              <AccordionItem value="colores">
+                <AccordionTrigger>
+                  <span className="flex items-center gap-2">
+                    <Palette className="h-4 w-4 text-muted-foreground" />
+                    Colores
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <ColorPicker productId={productId} colors={product.product_colors} />
+                </AccordionContent>
+              </AccordionItem>
 
-              <Separator />
-
-              <section>
-                <SectionLabel icon={<Palette className="h-3.5 w-3.5" />} title="Colores" />
-                <ColorPicker productId={productId} colors={product.product_colors} />
-              </section>
-            </>
+              {product.tipo === 'paquete' && (
+                <AccordionItem value="componentes">
+                  <AccordionTrigger>
+                    <span className="flex items-center gap-2">
+                      <Boxes className="h-4 w-4 text-muted-foreground" />
+                      Componentes del paquete
+                      {product.product_bundle_items.length > 0 && (
+                        <span className="text-xs font-normal text-muted-foreground">({product.product_bundle_items.length})</span>
+                      )}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <BundleItemsPicker paqueteId={productId} items={product.product_bundle_items} isAdmin={isAdmin} />
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+            </Accordion>
           ) : null}
         </div>
       </SheetContent>
     </Sheet>
-  )
-}
-
-function SectionLabel({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-4">
-      <span className="text-muted-foreground">{icon}</span>
-      <span className="font-heading font-semibold text-sm text-foreground">{title}</span>
-    </div>
   )
 }

@@ -38,6 +38,13 @@ export interface Database {
           destacado: boolean
           created_at: string
           updated_at: string
+          tipo: 'simple' | 'paquete'
+          descuento_tipo: 'precio_fijo' | 'porcentaje' | null
+          precio_oferta: number | null
+          descuento_porcentaje: number | null
+          descuento_activo: boolean
+          descuento_inicio: string | null
+          descuento_fin: string | null
         }
         Insert: {
           id?: string
@@ -49,6 +56,13 @@ export interface Database {
           destacado?: boolean
           created_at?: string
           updated_at?: string
+          tipo?: 'simple' | 'paquete'
+          descuento_tipo?: 'precio_fijo' | 'porcentaje' | null
+          precio_oferta?: number | null
+          descuento_porcentaje?: number | null
+          descuento_activo?: boolean
+          descuento_inicio?: string | null
+          descuento_fin?: string | null
         }
         Update: {
           id?: string
@@ -60,6 +74,13 @@ export interface Database {
           destacado?: boolean
           created_at?: string
           updated_at?: string
+          tipo?: 'simple' | 'paquete'
+          descuento_tipo?: 'precio_fijo' | 'porcentaje' | null
+          precio_oferta?: number | null
+          descuento_porcentaje?: number | null
+          descuento_activo?: boolean
+          descuento_inicio?: string | null
+          descuento_fin?: string | null
         }
         Relationships: []
       }
@@ -67,6 +88,69 @@ export interface Database {
         Row: { product_id: string; category_id: string }
         Insert: { product_id: string; category_id: string }
         Update: { product_id?: string; category_id?: string }
+        Relationships: []
+      }
+      product_bundle_items: {
+        Row: {
+          id: string
+          paquete_id: string
+          producto_id: string
+          cantidad: number
+          orden: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          paquete_id: string
+          producto_id: string
+          cantidad?: number
+          orden?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          paquete_id?: string
+          producto_id?: string
+          cantidad?: number
+          orden?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      product_gifts: {
+        Row: {
+          id: string
+          producto_disparador_id: string
+          producto_regalo_id: string
+          cantidad_regalo: number
+          mensaje: string
+          activo: boolean
+          fecha_inicio: string | null
+          fecha_fin: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          producto_disparador_id: string
+          producto_regalo_id: string
+          cantidad_regalo?: number
+          mensaje: string
+          activo?: boolean
+          fecha_inicio?: string | null
+          fecha_fin?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          producto_disparador_id?: string
+          producto_regalo_id?: string
+          cantidad_regalo?: number
+          mensaje?: string
+          activo?: boolean
+          fecha_inicio?: string | null
+          fecha_fin?: string | null
+          created_at?: string
+        }
         Relationships: []
       }
       product_images: {

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { updateOrderStatus, type OrderStatus } from '../api/orders.api'
+import { updateOrderStatus, deleteOrder, type OrderStatus } from '../api/orders.api'
 import { ORDERS_KEY, orderQueryKey } from './useOrders'
 
 export function useUpdateOrderStatus() {
@@ -11,5 +11,13 @@ export function useUpdateOrderStatus() {
       qc.invalidateQueries({ queryKey: ORDERS_KEY })
       qc.invalidateQueries({ queryKey: orderQueryKey(id) })
     },
+  })
+}
+
+export function useDeleteOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => deleteOrder(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ORDERS_KEY }),
   })
 }
